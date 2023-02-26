@@ -1,0 +1,127 @@
+# pyproject.toml
+# --------------
+# This is the project metadata file that instructs
+# pip and the various tools on which configurations should
+# be used for this project.
+#
+# ⚠️ You probably do not want to edit this file.
+# To edit the app settings check: AppMain/settings.py
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+known_web = "fastapi,starlette,pydantic,sqlmodel,sqlalchemy,beanie"
+sections = "FUTURE,STDLIB,THIRDPARTY,WEB,FIRSTPARTY,LOCALFOLDER"
+skip_gitignore = true
+line_length = 120
+
+[tool.pylint.master]
+ignore = []
+extension-pkg-whitelist = ['pydantic']
+load-plugins = [
+    'pylint.extensions.mccabe',
+    'pylint.extensions.private_import',
+    'pylint.extensions.redefined_variable_type',
+    'pylint.extensions.comparison_placement',
+    'pylint.extensions.no_self_use',
+    'pylint.extensions.broad_try_clause',
+    'pylint.extensions.confusing_elif',
+    'pylint.extensions.for_any_all',
+    'pylint.extensions.while_used',
+    'pylint.extensions.redefined_loop_name',
+    'pylint.extensions.bad_builtin',
+    'pylint.extensions.docparams',
+]
+enable = 'all'
+
+[tool.pylint.format]
+max-line-length = "125"  # black will enfore 120, but sometimes it may decides to not do if it is more readable
+
+[tool.pylint.messages_control]
+disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "too-few-public-methods",
+]
+
+[tool.pylint.design]
+min-public-methods = 1
+max-parents = 10
+max-complexity = 10
+
+[tool.pylint.variables]
+ignored-argument-names = "args|kwargs|request"
+
+[tool.pylint.basic]
+good-names = [
+    "_", "i", "e", "k", "v", "x", "id", "pk", "qs", "setUp", "tearDown", "maxDiff", "AppMain"
+]
+
+[tool.pylint.similarities]
+ignore-comments = true
+ignore-docstrings = true
+ignore-imports = true
+ignore-signatures = true
+min-similarity-lines = 5
+
+[tool.pylint.miscellaneous]
+notes = ['FIXME']
+
+[tool.mypy]
+exclude = ['.venv/', 'venv/', '_local/']
+plugins = ['pydantic.mypy']
+show_error_codes = true
+strict = true
+# no_strict_optional = true
+# packages
+namespace_packages = true
+explicit_package_bases = true
+# functions
+warn_no_return = true
+warn_unreachable = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
+[[tool.mypy.overrides]]
+module = [
+    "motor", 
+    "uvicorn", 
+    "aioamqp", 
+    "aioamqp.channel", 
+    "aioamqp.exceptions", 
+    "aioamqp.properties",
+    "aioamqp.envelope",
+    "async_asgi_testclient", 
+]
+ignore_missing_imports = true
+implicit_reexport = true
+
+[tool.pydocstyle]
+inherit = false
+convention = 'pep257'
+match-dir = 'AppMain|sap'
+add-ignore = ['D202']
+
+[tool.pytest.ini_options]
+testpaths = "tests"
+asyncio_mode = "auto"
+addopts = '--cov=sap --cov-fail-under=100 --no-cov-on-fail'
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    'pragma: no cover',
+    'def __repr__',
+    'def __str__',
+    'if typing\.TYPE_CHECKING',
+    'NotImplementedError'
+]

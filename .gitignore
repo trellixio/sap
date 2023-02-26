@@ -127,3 +127,16 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Local files
+_local/
+*local.*
+.idea/
+www/
+tmp/
+
+db.sqlite3
+*.log
+
+# Jupyter Notebook files
+*.ipynb

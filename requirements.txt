@@ -1,0 +1,12 @@
+# Dependencies
+# ------------
+# Add here the list of packages that need to be install to run the app.
+# This list is to be updated manually as new packages are added to the project.
+# Do not use an automated to freeze local dependencies.
+# For convenience dev dependencies are in the file: requirements-dev.txt
+
+# Package installer
+pip==23.0.1
+
+# Install all dependencies in setup.py
+-e .

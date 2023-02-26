@@ -1,0 +1,53 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: mixed-line-ending
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: no-commit-to-branch
+        args: [--branch, release, --branch, staging]
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        name: isort-check
+        args: [--check]
+  - repo: https://github.com/psf/black
+    rev: 22.6.0
+    hooks:
+      - id: black
+        name: black-check
+        args: [--check]
+  - repo: local
+    hooks:
+      - id: mypy-check
+        args: []
+        name: mypy-check
+        entry: mypy
+        types: [python]
+        language: system
+      - id: pydocstyle-check
+        args: []
+        name: pydocstyle-check
+        entry: pydocstyle
+        types: [python]
+        language: system
+      - id: pylint-check
+        args: []
+        name: pylint-check
+        entry: pylint
+        types: [python]
+        language: system
+      - id: pytest-check
+        args: []
+        name: pytest-check
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true
