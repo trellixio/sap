@@ -122,7 +122,8 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
         topic = message.delivery_info["routing_key"]
         for task in self.get_task_list():
             if match_amqp_topics(task.packet.topic, topic):
-                task.apply_async(args=(body["identifier"],), kwargs=body["kwargs"], time_limit=60)
+                identifier = body.get('identifier') or body.get('card_pid') or body.get('clover_id')
+                task.apply_async(args=(identifier,), kwargs=body["kwargs"], time_limit=60)
 
     def get_task_list(self) -> list[LambdaTask]:
         """Retrieves the list of lambda tasks to execute."""
