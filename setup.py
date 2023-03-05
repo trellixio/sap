@@ -10,11 +10,11 @@ long_description = (this_directory / "README.md").read_text()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-version = "0.1.0"
+VERSION = "0.1.0"
 
 setup(
     name="sap",
-    version=version,
+    version=VERSION,
     packages=["sap"],
     include_package_data=True,
     license="COPYRIGHT @ Trellix",
