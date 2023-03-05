@@ -45,10 +45,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # @app.on_event("startup")
 async def update_uvicorn_logger() -> None:
     """Log all uvicorn errors."""
-    logger = logging.getLogger("uvicorn.access")
+    logger_uvicorn = logging.getLogger("uvicorn.access")
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-    logger.addHandler(handler)
+    logger_uvicorn.addHandler(handler)
 
 
 class UvicornAccessLogFilter(logging.Filter):

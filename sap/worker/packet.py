@@ -1,5 +1,5 @@
 """
-Packet. 
+Packet.
 
 Packets are messages sent through a queue service to run a task on a remote server.
 """

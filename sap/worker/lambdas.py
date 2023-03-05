@@ -1,6 +1,6 @@
 """
 Lambdas refers to async background tasks.
-They run code in response to events which are typically messages sent to a queue. 
+They run code in response to events which are typically messages sent to a queue.
 """
 import asyncio
 import typing
@@ -107,8 +107,8 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
         #     logger.debug(f"Consuming worker name={self.name} topic={topic} body={body} headers={headers}")
         try:
             self._propagate_signal(body, message)
-        except Exception as e:  # pragma: no cover 
-            logger.exception(e)
+        except Exception as exc:  # pylint: disable=broad-except; pragma: no cover
+            logger.exception(exc)
             message.reject()
         else:
             message.ack()
@@ -122,7 +122,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
         topic = message.delivery_info["routing_key"]
         for task in self.get_task_list():
             if match_amqp_topics(task.packet.topic, topic):
-                identifier = body.get('identifier') or body.get('card_pid') or body.get('clover_id')
+                identifier = body.get("identifier") or body.get("card_pid") or body.get("clover_id")
                 task.apply_async(args=(identifier,), kwargs=body["kwargs"], time_limit=60)
 
     def get_task_list(self) -> list[LambdaTask]:
