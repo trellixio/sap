@@ -26,6 +26,7 @@ setup(
     python_requires=">=3.9",
     install_requires=[
         "aioamqp~=0.15",
+        "httpx~=0.23",
         "redis~=4.5",
         "celery~=5.2",
         "pydantic~=1.10",
