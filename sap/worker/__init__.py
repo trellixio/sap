@@ -1,7 +1,7 @@
 """
 FastAPI.
 
-This package regroups all common helpers exclusively 
+This package regroups all common helpers exclusively
 for Celery and background workers in general.
 """
 

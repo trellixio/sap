@@ -91,14 +91,14 @@ warn_untyped_fields = true
 
 [[tool.mypy.overrides]]
 module = [
-    "motor", 
-    "uvicorn", 
-    "aioamqp", 
-    "aioamqp.channel", 
-    "aioamqp.exceptions", 
+    "motor",
+    "uvicorn",
+    "aioamqp",
+    "aioamqp.channel",
+    "aioamqp.exceptions",
     "aioamqp.properties",
     "aioamqp.envelope",
-    "async_asgi_testclient", 
+    "async_asgi_testclient",
 ]
 ignore_missing_imports = true
 implicit_reexport = true

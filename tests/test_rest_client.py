@@ -8,10 +8,9 @@ import httpx
 import pytest
 
 from AppMain.settings import AppSettings
-from sap.rest import exceptions
-from sap.rest import BeansClient
+from sap.rest import BeansClient, exceptions
 
-integration_params = AppSettings.JUDGEME
+integration_params = AppSettings.TOKENIFY
 testcases_params = AppSettings.TESTCASES
 
 

@@ -8,6 +8,7 @@ Mailbox.reply_exchange_fmt = "%s.reply.pidbox"
 
 class CeleryConfig:
     """Default config params for all celery applications."""
+
     proj_node: str
 
     task_default_exchange: str
@@ -32,7 +33,6 @@ class CeleryConfig:
     task_acks_late: bool
     task_acks_on_failure_or_timeout: bool
     task_reject_on_worker_lost: bool
-    
 
     def __init__(self, proj_name: str, is_prod: bool) -> None:
         """Initialize config."""

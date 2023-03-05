@@ -13,6 +13,7 @@ import urllib.parse
 import httpx
 
 from sap.loggers import logger
+
 from . import exceptions
 
 
@@ -94,9 +95,7 @@ class RestClient:
 
         response_data.response = response
         if response.status_code >= 300:
-            logger.debug(
-                "Bad response from Rest API code=%d data=%s", response.status_code, str(response_data)
-            )
+            logger.debug("Bad response from Rest API code=%d data=%s", response.status_code, str(response_data))
 
         if response.status_code >= 500:  # pragma: no cover
             raise exceptions.Rest503Error(data=response_data)

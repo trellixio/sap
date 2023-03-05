@@ -23,7 +23,18 @@ import pathlib
 
 import pydantic
 
-from sap.settings import DatabaseParams
+from sap.settings import DatabaseParams, IntegrationParams
+
+
+class TestcasesParams(pydantic.BaseModel):
+    """
+    Parameters to for testcases.
+
+    This params are only used to automate testcases.
+    """
+
+    beans_card_id: str = ""
+    beans_access_token: str = ""
 
 
 class _Settings(pydantic.BaseSettings):
@@ -51,6 +62,9 @@ class _Settings(pydantic.BaseSettings):
     CRYPTO_SECRET: str  # a key used for encryption
     AIRTABLE_TOKEN: str = ""
     BEANS_OAUTH_URL: str = "https://connect.trybeans.com/auth/authorize/?client_id={client_id}"
+
+    TESTCASES: TestcasesParams = TestcasesParams()
+    TOKENIFY: IntegrationParams
 
     class Config:
         env_nested_delimiter = "__"
