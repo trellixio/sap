@@ -10,6 +10,17 @@ from datetime import datetime
 
 import pydantic
 
+if typing.TYPE_CHECKING:
+    T = typing.TypeVar("T")
+
+    class Link(beanie.Link[T]):
+        """Fix typing issue mypy when querying related fields."""
+
+        id: beanie.PydanticObjectId
+
+else:
+    from beanie import Link
+
 
 class _DocMeta(pydantic.BaseModel):
     """Meta Data allowing to keep trace of Documents versioning and updates."""
