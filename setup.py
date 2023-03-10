@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
@@ -10,12 +10,13 @@ long_description = (this_directory / "README.md").read_text()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 setup(
     name="sap",
     version=VERSION,
-    packages=["sap"],
+    packages=find_packages(include=('sap.*', 'sap')),
+    package_data={'sap': ['py.typed']},
     include_package_data=True,
     license="COPYRIGHT @ Trellix",
     description="Library of re-usable utilities for python web apps.",
