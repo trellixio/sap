@@ -9,7 +9,7 @@ import celery
 import celery.bootsteps
 import celery.worker.consumer
 import kombu
-import kombu.transport.base
+from kombu.transport.base import StdChannel  # Channel
 
 from sap.loggers import logger
 
@@ -58,7 +58,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
     packets: list[SignalPacket]
     name: str
 
-    def _get_queues(self, channel: kombu.Connection) -> list[kombu.Queue]:
+    def _get_queues(self, channel: StdChannel) -> list[kombu.Queue]:
         """Retrieve the list of AMQP queues associated to each packet signal."""
         queue_list: list[kombu.Queue] = []
         for packet in self.packets:
@@ -79,7 +79,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
 
         return queue_list
 
-    def get_consumers(self, channel: kombu.Connection) -> list[kombu.Consumer]:
+    def get_consumers(self, channel: StdChannel) -> list[kombu.Consumer]:
         """
         Create packet consumers. The consumers are the entrypoint of
         the application once celery starts receiving messages.
@@ -107,7 +107,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
         #     logger.debug(f"Consuming worker name={self.name} topic={topic} body={body} headers={headers}")
         try:
             self._propagate_signal(body, message)
-        except Exception as exc:  # pylint: disable=broad-except; pragma: no cover
+        except Exception as exc:  # pylint: disable=broad-except
             logger.exception(exc)
             message.reject()
         else:

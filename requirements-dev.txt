@@ -27,6 +27,7 @@ pydocstyle~=6.3
 # Linting: Stubs
 types-PyYAML~=6.0
 celery-types~=0.14
+motor-stubs~=1.7
 
 # Testing
 pytest~=7.2

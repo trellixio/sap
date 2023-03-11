@@ -8,15 +8,15 @@ Learn more: https://fastapi.tiangolo.com/tutorial/middleware/
 import traceback
 import typing
 
+import beanie
+from beanie.odm.documents import DocType
+from beanie.odm.views import View
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from sap.beanie.client import BeanieClient
-import beanie
-from beanie.odm.documents import DocType
-from beanie.odm.views import View
 from sap.loggers import logger
 from sap.settings import DatabaseParams
 
@@ -40,7 +40,7 @@ class LogServerErrorMiddleware(BaseHTTPMiddleware):
         """Render server error."""
         try:
             return await call_next(request)
-        except Exception as exc:  # pylint: disable=broad-except; pragma: no cover
+        except Exception as exc:  # pylint: disable=broad-except
             logger.exception(exc)
             trace = traceback.format_exception(type(exc), exc, exc.__traceback__)
             return JSONResponse(content={"traceback": trace}, status_code=500)
@@ -53,7 +53,12 @@ class InitBeanieMiddleware:
     mongo_params: DatabaseParams
     document_models: list[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]]
 
-    def __init__(self, app: ASGIApp, mongo_params: DatabaseParams, document_models: list[typing.Union[typing.Type["DocType"], typing.Type["View"], str]]) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        mongo_params: DatabaseParams,
+        document_models: list[typing.Union[typing.Type["DocType"], typing.Type["View"], str]],
+    ) -> None:
         """Initialize Middleware."""
         self.app = app
         self.mongo_params = mongo_params

@@ -8,6 +8,7 @@ from __future__ import annotations
 import typing
 from datetime import datetime
 
+import beanie
 import pydantic
 
 if typing.TYPE_CHECKING:

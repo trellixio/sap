@@ -3,7 +3,6 @@ Packet.
 
 Packets are messages sent through a queue service to run a task on a remote server.
 """
-import asyncio
 import json
 import re
 import typing
@@ -13,35 +12,13 @@ import aioamqp.channel
 from pamqp.constants import DOMAIN_REGEX
 
 from sap.loggers import logger
-from sap.settings import DatabaseParams, SapSettings
+from sap.settings import SapSettings
 
-DOMAIN_REGEX["queue-name"] = re.compile(r"^[a-zA-Z0-9-_.:@#,/><]*$")
+from .amqp import AMQPClient
 
 # from . import exceptions
 
-
-class AMQPClient:
-    """Set up a connection to the AMQP server."""
-
-    transport: asyncio.Transport
-    protocol: aioamqp.AmqpProtocol
-    channel: aioamqp.channel.Channel
-    db_params: DatabaseParams
-
-    async def connect(self) -> None:
-        """
-        Establish connect to the AMQP server.
-        An `__init__` method can't be a coroutine.
-        """
-        self.transport, self.protocol = await aioamqp.connect(
-            host=self.db_params.host,
-            port=self.db_params.port,
-            login=self.db_params.username,
-            password=self.db_params.password,
-            virtualhost=self.db_params.db,
-            ssl=self.db_params.protocol.endswith("s"),
-        )
-        self.channel = await self.protocol.channel()
+DOMAIN_REGEX["queue-name"] = re.compile(r"^[a-zA-Z0-9-_.:@#,/><]*$")
 
 
 class _Packet:

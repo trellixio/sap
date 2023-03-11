@@ -3,13 +3,8 @@ import typing
 from motor.motor_asyncio import AsyncIOMotorClient
 
 import beanie
-from beanie.odm.documents import DocType
-from beanie.odm.views import View
 
 from sap.settings import DatabaseParams
-
-# DocModelType = typing.NewType("DocModelType", typing.Union[typing.Type[DocType], typing.Type[View], str])
-DocModelType = typing.TypeVar("DocModelType", bound=beanie.View)
 
 
 class BeanieClient:
