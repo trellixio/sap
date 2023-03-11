@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
@@ -15,8 +15,8 @@ VERSION = "0.1.1"
 setup(
     name="sap",
     version=VERSION,
-    packages=find_packages(include=('sap.*', 'sap')),
-    package_data={'sap': ['py.typed']},
+    packages=find_packages(include=("sap.*", "sap")),
+    package_data={"sap": ["py.typed"]},
     include_package_data=True,
     license="COPYRIGHT @ Trellix",
     description="Library of re-usable utilities for python web apps.",
@@ -33,6 +33,9 @@ setup(
         "pydantic~=1.10",
         "fastAPI~=0.89",
         "itsdangerous~=2.1",
+        "beanie~=1.15",
+        "motor~=3.1",
+        "sqlmodel~=0.0",
     ],
     classifiers=[
         "Environment :: Web Environment",

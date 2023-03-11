@@ -5,9 +5,10 @@ This package regroups all common helpers exclusively
 for Celery and background workers in general.
 """
 
+from .amqp import AMQPClient
 from .crons import CronTask, FetchStrategy, register_crontask
 from .lambdas import LambdaTask, LambdaWorker, register_lambda
-from .packet import AMQPClient, SignalPacket
+from .packet import SignalPacket
 from .utils import register_tasks_with_celery_beat
 
 __all__ = [

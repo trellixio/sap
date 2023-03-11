@@ -10,6 +10,7 @@ class CeleryConfig:
     """Default config params for all celery applications."""
 
     proj_node: str
+    is_prod: bool
 
     task_default_exchange: str
     task_default_queue: str
@@ -36,6 +37,8 @@ class CeleryConfig:
 
     def __init__(self, proj_name: str, is_prod: bool) -> None:
         """Initialize config."""
+        self.is_prod = is_prod
+
         celery_app_name = f"celery.{self.proj_node}.{proj_name}"
         self.task_default_exchange = celery_app_name
         self.task_default_queue = celery_app_name

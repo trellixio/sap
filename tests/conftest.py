@@ -21,7 +21,7 @@ def celery_config() -> dict[str, str]:
 
 
 @pytest.fixture(scope="session")
-def celery_enable_logging():
+def celery_enable_logging() -> bool:
     """Enable logging for celery."""
     return True
 
