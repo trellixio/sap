@@ -49,7 +49,7 @@ class ObjectSerializer(BaseModel):
         for attr, field in cls.__fields__.items():
             if field.field_info.extra.get("editable"):
                 attributes[attr] = (field.type_, ...) if field.default is None else field.default
-        return create_model("CreateSerializer", **attributes)
+        return create_model(f"Write{cls.__name__}", __module__=cls.__module__, **attributes)
 
     # @classmethod
     # def update(cls, instance: ModelType, data: dict[str, typing.Any]) -> ObjectSerializer:
