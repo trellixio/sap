@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, create_model, validator
 from pydantic.fields import ModelField
 
 ModelType = typing.TypeVar("ModelType", bound=BaseModel)
+SerializerType = typing.TypeVar("SerializerType", bound=BaseModel)
 
 
 class ObjectSerializer(BaseModel):
@@ -32,20 +33,20 @@ class ObjectSerializer(BaseModel):
         return data
 
     @classmethod
-    def read(cls, instance: ModelType) -> ObjectSerializer:
+    def read(cls, instance: ModelType) -> "SerializerType":
         """Serialize a single object instance."""
         return cls(**cls._get_instance_data(instance))
 
     @classmethod
-    def read_list(cls, instance_list: list[ModelType]) -> list[ObjectSerializer]:
+    def read_list(cls, instance_list: list[ModelType]) -> list[SerializerType]:
         """Serialize a list of objects."""
-        return [cls.retrieve(instance) for instance in instance_list]
+        return [cls.read(instance) for instance in instance_list]
 
     @classmethod
-    def class_write(cls) -> type[BaseModel]:
+    def class_write(cls) -> typing.Type[BaseModel]:
         attributes = {}
+        field: ModelField
         for attr, field in cls.__fields__.items():
-            field: ModelField
             if field.field_info.extra.get("editable"):
                 attributes[attr] = (field.type_, ...) if field.default is None else field.default
         return create_model("CreateSerializer", **attributes)

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Mapping, Optional, Type, Union
 from pymongo.client_session import ClientSession
 
 import beanie
+from beanie import PydanticObjectId
 from beanie.odm.queries.find import FindOne
 
 from sap.fastapi.exceptions import Object404Error
@@ -18,16 +19,17 @@ class Document(beanie.Document):
     @classmethod
     async def get_or_404(
         cls: Type["DocType"],
-        document_id: beanie.PydanticObjectId,
+        document_id: Union[PydanticObjectId, str],
         session: Optional[ClientSession] = None,
         ignore_cache: bool = False,
         fetch_links: bool = False,
         with_children: bool = False,
-        **pymongo_kwargs,
-    ) -> Optional["DocType"]:
+        **pymongo_kwargs: Any,
+    ) -> "DocType":
         """Get document by id or raise 404 error if document does not exist."""
+        doc_id = document_id if isinstance(document_id, PydanticObjectId) else PydanticObjectId(document_id)
         result = await super().get(
-            document_id=document_id,
+            document_id=doc_id,
             session=session,
             ignore_cache=ignore_cache,
             fetch_links=fetch_links,
@@ -47,10 +49,10 @@ class Document(beanie.Document):
         ignore_cache: bool = False,
         fetch_links: bool = False,
         with_children: bool = False,
-        **pymongo_kwargs,
-    ) -> Union[FindOne["DocType"], FindOne["DocumentProjectionType"]]:
+        **pymongo_kwargs: Any,
+    ) -> "DocType":
         """Find document from query or raise 404 error if document does not exist."""
-        result = await super().find_one(
+        result: Optional["DocType"] = await super().find_one(
             *args,
             projection_model=projection_model,
             session=session,
