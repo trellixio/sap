@@ -17,7 +17,6 @@ class BeanieClient:
         cls,
         mongo_params: DatabaseParams,
         document_models: list[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]],
-        # document_models: list[typing.Union[typing.Type[DocType], typing.Type[View], str]],
     ) -> None:
         """Open and maintain a connection to the database.
 
