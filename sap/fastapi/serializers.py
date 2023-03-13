@@ -6,6 +6,7 @@ Handle data validation.
 from __future__ import annotations
 
 import typing
+import datetime
 
 from pydantic import BaseModel, Field, create_model, validator
 from pydantic.fields import ModelField
@@ -20,6 +21,11 @@ class ObjectSerializer(BaseModel):
     @classmethod
     def get_id(cls, instance: ModelType) -> str:
         return str(instance.id)
+
+    @classmethod
+    def get_created(cls, instance: ModelType) -> datetime.datetime:
+        """Return the user creation date."""
+        return instance.doc_meta.created
 
     @classmethod
     def _get_instance_data(cls, instance: ModelType) -> dict[str, typing.Any]:
@@ -49,7 +55,13 @@ class ObjectSerializer(BaseModel):
         for attr, field in cls.__fields__.items():
             if field.field_info.extra.get("editable"):
                 attributes[attr] = (field.type_, ...) if field.default is None else field.default
-        return create_model(f"Write{cls.__name__}", __module__=cls.__module__, **attributes)
+
+        return create_model(
+            f"Write{cls.__name__}",
+            __module__=cls.__module__,
+            # __base__=cls,
+            **attributes,
+        )
 
     # @classmethod
     # def update(cls, instance: ModelType, data: dict[str, typing.Any]) -> ObjectSerializer:
