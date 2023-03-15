@@ -2,11 +2,14 @@ from typing import TYPE_CHECKING, Any, Mapping, Optional, Type, Union
 
 from pymongo.client_session import ClientSession
 
+import datetime
 import beanie
+import pydantic
 from beanie import PydanticObjectId
 from beanie.odm.queries.find import FindOne
 
 from sap.fastapi.exceptions import Object404Error
+from .models import _DocMeta
 
 if TYPE_CHECKING:
     from beanie.odm.documents import DocType
@@ -15,6 +18,18 @@ if TYPE_CHECKING:
 
 class Document(beanie.Document):
     """Subclass beanie.Document that add handy methods."""
+    """Manage meta data and ensure that it's correctly set."""
+
+    doc_meta: _DocMeta = _DocMeta()
+
+    @pydantic.root_validator
+    @classmethod
+    def validate_doc_meta(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """Validate doc meta on each model update."""
+        doc_meta: _DocMeta = values["doc_meta"]
+        doc_meta.updated = datetime.datetime.now()
+        doc_meta.created = doc_meta.created or doc_meta.updated
+        return values
 
     @classmethod
     async def get_or_404(
