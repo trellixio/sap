@@ -1,14 +1,15 @@
+import datetime
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Type, Union
 
 from pymongo.client_session import ClientSession
 
-import datetime
 import beanie
 import pydantic
 from beanie import PydanticObjectId
 from beanie.odm.queries.find import FindOne
 
 from sap.fastapi.exceptions import Object404Error
+
 from .models import _DocMeta
 
 if TYPE_CHECKING:
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
 
 class Document(beanie.Document):
     """Subclass beanie.Document that add handy methods."""
+
     """Manage meta data and ensure that it's correctly set."""
 
     doc_meta: _DocMeta = _DocMeta()
