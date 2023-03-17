@@ -15,7 +15,7 @@ ModelType = typing.TypeVar("ModelType", bound=BaseModel)
 SerializerType = typing.TypeVar("SerializerType", bound=BaseModel)
 
 
-class ReadObjectSerializer(BaseModel):
+class ObjectSerializer(BaseModel):
     """Serialize an object for retrieve or list."""
 
     @classmethod
@@ -54,20 +54,20 @@ class ReadObjectSerializer(BaseModel):
         """Serialize a list of objects."""
         return [cls.read(instance) for instance in instance_list]
 
-    @classmethod
-    def class_write(cls) -> typing.Type[BaseModel]:
-        attributes = {}
-        field: ModelField
-        for attr, field in cls.__fields__.items():
-            if field.field_info.extra.get("editable"):
-                attributes[attr] = (field.type_, ...) if field.default is None else field.default
+    # @classmethod
+    # def class_write(cls) -> typing.Type[BaseModel]:
+    #     attributes = {}
+    #     field: ModelField
+    #     for attr, field in cls.__fields__.items():
+    #         if field.field_info.extra.get("editable"):
+    #             attributes[attr] = (field.type_, ...) if field.default is None else field.default
 
-        return create_model(
-            f"Write{cls.__name__}",
-            __module__=cls.__module__,
-            # __base__=cls,
-            **attributes,
-        )
+    #     return create_model(
+    #         f"Write{cls.__name__}",
+    #         __module__=cls.__module__,
+    #         # __base__=cls,
+    #         **attributes,
+    #     )
 
     # @classmethod
     # def update(cls, instance: ModelType, data: dict[str, typing.Any]) -> ObjectSerializer:
@@ -88,4 +88,3 @@ class ReadObjectSerializer(BaseModel):
 #         """Serialize a single object instance."""
 #         return cls(**cls._get_instance_data(instance))
 
-ObjectSerializer = ReadObjectSerializer
