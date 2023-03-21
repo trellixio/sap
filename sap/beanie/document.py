@@ -6,7 +6,6 @@ from pymongo.client_session import ClientSession
 import beanie
 import pydantic
 from beanie import PydanticObjectId
-from beanie.odm.queries.find import FindOne
 
 from sap.fastapi.exceptions import Object404Error
 
@@ -19,8 +18,6 @@ if TYPE_CHECKING:
 
 class Document(beanie.Document):
     """Subclass beanie.Document that add handy methods."""
-
-    """Manage meta data and ensure that it's correctly set."""
 
     doc_meta: _DocMeta = _DocMeta()
 

@@ -8,5 +8,4 @@ class Object404Error(HTTPException):
     detail: str = "Object not found"
 
     def __init__(self, detail: str = ""):
-        self.detail = detail or self.detail
-        pass
+        super().__init__(status_code=404, detail=detail or self.detail)
