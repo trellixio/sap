@@ -10,7 +10,7 @@ long_description = (this_directory / "README.md").read_text()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-VERSION = "0.1.2"
+VERSION = "0.1.4"
 
 setup(
     name="sap",
@@ -31,6 +31,7 @@ setup(
         "redis~=4.5",
         "celery~=5.2",
         "pydantic~=1.10",
+        "PyJWT~=2.6",
         "fastAPI~=0.89",
         "itsdangerous~=2.1",
         "beanie~=1.15",
