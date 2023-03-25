@@ -63,7 +63,7 @@ async def prefetch_related(item_list: list[ModelType], to_attribute: str) -> Non
     related_item_list = await related_model.find(operators.In(related_model.id, related_item_ids)).to_list()
     for item in item_list:
         related_id = get_related_id(item)
-        related_item = next(rel for rel in related_item_list if rel.id == related_id) if related_id else None
+        related_item = next((rel for rel in related_item_list if rel.id == related_id), None) if related_id else None
         setattr(item, to_attribute, related_item)
 
 

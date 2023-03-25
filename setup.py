@@ -10,7 +10,7 @@ long_description = (this_directory / "README.md").read_text()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 
 setup(
     name="sap",
@@ -37,6 +37,8 @@ setup(
         "beanie~=1.15",
         "motor~=3.1",
         "sqlmodel~=0.0",
+        "typing-extensions~=4.5",
+        "PyYAML~=6.0",
     ],
     classifiers=[
         "Environment :: Web Environment",
