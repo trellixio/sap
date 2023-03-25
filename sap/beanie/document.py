@@ -7,7 +7,7 @@ import beanie
 import pydantic
 from beanie import PydanticObjectId
 
-from sap.fastapi.exceptions import Object404Error
+from .exceptions import Object404Error
 
 from .models import _DocMeta
 
