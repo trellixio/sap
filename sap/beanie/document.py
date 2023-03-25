@@ -8,7 +8,6 @@ import pydantic
 from beanie import PydanticObjectId
 
 from .exceptions import Object404Error
-
 from .models import _DocMeta
 
 if TYPE_CHECKING:

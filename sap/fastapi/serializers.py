@@ -6,20 +6,21 @@ Handle data validation.
 from __future__ import annotations
 
 import datetime
-from typing import Any, TypeVar, Optional, Union, Generic, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, Union
 
+from fastapi import Request
 from pydantic import BaseModel
 from pydantic.fields import SHAPE_LIST
 
-from fastapi import Request
 from sap.beanie.document import Document
+
 from . import utils
 
 ModelType = TypeVar("ModelType", bound=Document)
 # SerializerType = TypeVar("SerializerType", bound=BaseModel)
 
 if TYPE_CHECKING:
-    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny, DictStrAny
+    from pydantic.typing import AbstractSetIntStr, DictStrAny, MappingIntStrAny
 
 
 class CursorInfo:

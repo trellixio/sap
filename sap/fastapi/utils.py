@@ -5,13 +5,13 @@ This file helps you centralized utility functions and classes
 that needs to be re-used but are not a core part of the app logic.
 """
 
-import typing
 import base64
+import typing
 from enum import Enum
 
 from fastapi import Request
 
-if typing.TYPE_CHECKING :
+if typing.TYPE_CHECKING:
     from pydantic.error_wrappers import ErrorDict
 
 
@@ -71,6 +71,7 @@ class Flash:
             messages = request.session.pop("_messages")
             request.session["_messages"] = []
         return messages
+
 
 def base64_url_encode(text: str) -> str:
     "Encode a b64 for use in URL query by removing `=` character."

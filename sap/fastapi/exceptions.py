@@ -1,5 +1,5 @@
-
 from fastapi import HTTPException, status
+
 from sap.beanie.exceptions import Object404Error as Object404Error
 
 

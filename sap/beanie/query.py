@@ -8,7 +8,6 @@ import typing
 from beanie import Document, Link, PydanticObjectId, operators
 from beanie.odm.fields import ExpressionField, LinkInfo
 
-
 ModelType = typing.TypeVar("ModelType", bound=Document)
 
 RelModelType = typing.TypeVar("RelModelType", bound=Document)  # Related Model Type
@@ -128,8 +127,8 @@ async def prefetch_related_children(
 
 
 def prepare_search_string(search_text: str) -> str:
-    """Clean and reformat the search string """
+    """Clean and reformat the search string"""
     res = search_text.strip()
-    if '@' in res and not '"' in res:
+    if "@" in res and not '"' in res:
         res = f'"{res}"'
     return res
