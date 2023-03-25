@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from sap.beanie.exceptions import Object404Error as Object404Error
 
 
-class ValidationError(HTTPException):
+class Validation422Error(HTTPException):
     """Raise when querying DB returns empty result"""
 
     status_code: int = status.HTTP_422_UNPROCESSABLE_ENTITY

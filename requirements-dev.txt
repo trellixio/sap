@@ -38,6 +38,7 @@ async-asgi-testclient~=1.4
 pytest-celery~=0.0
 python-dotenv~=1.0
 
-# CI/CD
+# Devtools/CI/CD
+rich==13.3.2
 pre-commit~=3.0
 PyYAML~=6.0

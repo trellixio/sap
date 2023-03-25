@@ -125,3 +125,11 @@ async def prefetch_related_children(
             if item.id == rel_link.ref.id:
                 related_items.append(rel)
         setattr(item, to_attribute, filter_func(related_items=related_items, item=item))
+
+
+def prepare_search_string(search_text: str) -> str:
+    """Clean and reformat the search string """
+    res = search_text.strip()
+    if '@' in res and not '"' in res:
+        res = f'"{res}"'
+    return res

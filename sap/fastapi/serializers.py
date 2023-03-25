@@ -6,29 +6,20 @@ Handle data validation.
 from __future__ import annotations
 
 import datetime
-import typing
-import pydantic
-import base64
+from typing import Any, TypeVar, Optional, Union, Generic, TYPE_CHECKING
 
 from pydantic import BaseModel
 from pydantic.fields import SHAPE_LIST
 
-# from beanie import Document, Link
 from fastapi import Request
 from sap.beanie.document import Document
+from . import utils
 
-ModelType = typing.TypeVar("ModelType", bound=Document)
-# SerializerType = typing.TypeVar("SerializerType", bound=BaseModel)
+ModelType = TypeVar("ModelType", bound=Document)
+# SerializerType = TypeVar("SerializerType", bound=BaseModel)
 
-
-def base64_url_encode(text: str) -> str:
-    "Encode a b64 for use in URL query by removing `=` character."
-    return base64.urlsafe_b64encode(text.encode()).rstrip(b"\n=").decode("ascii")
-
-
-def base64_url_decode(text: str) -> str:
-    "Decode a URL safely encoded b64."
-    return base64.urlsafe_b64decode(text.encode().ljust(len(text) + len(text) % 4, b"=")).decode()
+if TYPE_CHECKING:
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny, DictStrAny
 
 
 class CursorInfo:
@@ -42,12 +33,12 @@ class CursorInfo:
         """Initialize the cursor info."""
         cursor_str = request.query_params.get("cursor", "")
         try:
-            limit, offset = base64_url_decode(cursor_str).split(",")
+            limit, offset = utils.base64_url_decode(cursor_str).split(",")
         except ValueError:
             return
         self.limit, self.offset = int(limit), int(offset)
 
-    def get_beanie_query_params(self) -> dict[str, typing.Any[int, str]]:
+    def get_beanie_query_params(self) -> dict[str, Any[int, str]]:
         """Return params to apply to the database query when using beanie"""
         return {
             "limit": self.limit,
@@ -55,20 +46,20 @@ class CursorInfo:
             "sort": self.sort,
         }
 
-    def get_next(self) -> typing.Optional[str]:
+    def get_next(self) -> Optional[str]:
         """Get the cursor to paginate forward."""
         offset = self.offset + self.limit
-        return base64_url_encode(f"{self.limit},{offset}")
+        return utils.base64_url_encode(f"{self.limit},{offset}")
 
-    def get_previous(self) -> typing.Optional[str]:
+    def get_previous(self) -> Optional[str]:
         """Get the cursor to paginate backward."""
         offset = self.offset - self.limit
         if offset <= 0:
             return None
-        return base64_url_encode(f"{self.limit},{offset}")
+        return utils.base64_url_encode(f"{self.limit},{offset}")
 
 
-class ObjectSerializer(typing.Generic[ModelType], BaseModel):
+class ObjectSerializer(Generic[ModelType], BaseModel):
     """Serialize an object for retrieve or list."""
 
     @classmethod
@@ -88,7 +79,7 @@ class ObjectSerializer(typing.Generic[ModelType], BaseModel):
         return instance.doc_meta.updated
 
     @classmethod
-    def _get_instance_data(cls, instance: ModelType) -> dict[str, typing.Any]:
+    def _get_instance_data(cls, instance: ModelType) -> dict[str, Any]:
         """Retrieve the serializer value from the instance and getters."""
         data = {}
         for field_name, field in cls.__fields__.items():
@@ -105,12 +96,12 @@ class ObjectSerializer(typing.Generic[ModelType], BaseModel):
         return data
 
     @classmethod
-    def read(cls, instance: ModelType) -> 'SerializerType':
+    def read(cls, instance: ModelType) -> "SerializerType":
         """Serialize a single object instance."""
         return cls(**cls._get_instance_data(instance))
 
     @classmethod
-    def read_list(cls, instance_list: list[ModelType]) -> list['SerializerType']:
+    def read_list(cls, instance_list: list[ModelType]) -> list["SerializerType"]:
         """Serialize a list of objects."""
         return [cls.read(instance) for instance in instance_list]
 
@@ -120,7 +111,7 @@ class ObjectSerializer(typing.Generic[ModelType], BaseModel):
         instance_list: list[ModelType],
         cursor_info: CursorInfo,
         request: Request,
-    ) -> PaginatedData['SerializerType']:
+    ) -> PaginatedData["SerializerType"]:
         """Serialize a list of objects."""
 
         # TODO: implemented proper cursor pagination, for now fake it till you make it.
@@ -135,18 +126,71 @@ class ObjectSerializer(typing.Generic[ModelType], BaseModel):
         )
 
 
-SerializerType = typing.TypeVar("SerializerType", bound=ObjectSerializer)
+SerializerType = TypeVar("SerializerType", bound=ObjectSerializer)
 
 
-class PaginatedData(typing.Generic[SerializerType], BaseModel):
+class PaginatedData(Generic[SerializerType], BaseModel):
     """Represent the structure of an API paginated list response."""
 
     object: str = "list"
     count: int
-    next: typing.Optional[str]
-    previous: typing.Optional[str]
-    data: list[typing.Any]
+    next: Optional[str]
+    previous: Optional[str]
+    data: list[Any]
 
 
-# class WriteObjectSerializer(BaseModel):
-#     """Serialize an object for create or update."""
+class WriteObjectSerializer(Generic[ModelType], BaseModel):
+    """Serialize an object for create or update."""
+
+    instance: Optional[ModelType] = None
+
+    def dict(
+        self,
+        *,
+        include: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
+        exclude: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,
+        by_alias: bool = False,
+        skip_defaults: Optional[bool] = None,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+    ) -> "DictStrAny":
+        """Dumps the serializer data with exclusion of unwanted fields."""
+        # Exclude from dumping
+        exclude = exclude or {}
+        exclude = exclude | {"instance": True}
+
+        # Some fields are only excluded from being cascade dumps to dict,
+        # but their original value is still needed
+        exclude_dumps = {}
+
+        for field_name, field in self.__fields__.items():
+            field.field_info
+
+            if issubclass(field.type_, Document):
+                exclude_dumps[field_name] = True
+
+            # Some fields are excluded as they are only needed for create
+            if field.field_info.extra.get("exclude_update") and self.instance:
+                exclude[field_name] = True
+
+            # Some fields are excluded as they are only needed for update
+            if field.field_info.extra.get("exclude_create") and not self.instance:
+                exclude[field_name] = True
+
+        exclude = exclude | exclude_dumps
+
+        result = super().dict(
+            include=include,
+            exclude=exclude,
+            by_alias=by_alias,
+            skip_defaults=skip_defaults,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+        )
+
+        for field_name in exclude_dumps:
+            result[field_name] = getattr(self, field_name)
+
+        return result
