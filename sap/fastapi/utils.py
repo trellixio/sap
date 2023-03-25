@@ -5,6 +5,7 @@ This file helps you centralized utility functions and classes
 that needs to be re-used but are not a core part of the app logic.
 """
 
+import base64
 import typing
 from enum import Enum
 
@@ -70,3 +71,13 @@ class Flash:
             messages = request.session.pop("_messages")
             request.session["_messages"] = []
         return messages
+
+
+def base64_url_encode(text: str) -> str:
+    "Encode a b64 for use in URL query by removing `=` character."
+    return base64.urlsafe_b64encode(text.encode()).rstrip(b"\n=").decode("ascii")
+
+
+def base64_url_decode(text: str) -> str:
+    "Decode a URL safely encoded b64."
+    return base64.urlsafe_b64decode(text.encode().ljust(len(text) + len(text) % 4, b"=")).decode()
