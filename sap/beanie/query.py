@@ -8,7 +8,6 @@ import typing
 from beanie import Document, Link, PydanticObjectId, operators
 from beanie.odm.fields import ExpressionField, LinkInfo
 
-
 ModelType = typing.TypeVar("ModelType", bound=Document)
 
 RelModelType = typing.TypeVar("RelModelType", bound=Document)  # Related Model Type
@@ -63,7 +62,7 @@ async def prefetch_related(item_list: list[ModelType], to_attribute: str) -> Non
     related_item_list = await related_model.find(operators.In(related_model.id, related_item_ids)).to_list()
     for item in item_list:
         related_id = get_related_id(item)
-        related_item = next(rel for rel in related_item_list if rel.id == related_id) if related_id else None
+        related_item = next((rel for rel in related_item_list if rel.id == related_id), None) if related_id else None
         setattr(item, to_attribute, related_item)
 
 
@@ -125,3 +124,11 @@ async def prefetch_related_children(
             if item.id == rel_link.ref.id:
                 related_items.append(rel)
         setattr(item, to_attribute, filter_func(related_items=related_items, item=item))
+
+
+def prepare_search_string(search_text: str) -> str:
+    """Clean and reformat the search string"""
+    res = search_text.strip()
+    if "@" in res and not '"' in res:
+        res = f'"{res}"'
+    return res
