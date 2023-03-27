@@ -80,31 +80,42 @@ class ObjectSerializer(Generic[ModelType], BaseModel):
         return instance.doc_meta.updated
 
     @classmethod
-    def _get_instance_data(cls, instance: ModelType) -> dict[str, Any]:
+    def _get_instance_data(cls, instance: ModelType, exclude: Union["AbstractSetIntStr"] = None) -> dict[str, Any]:
         """Retrieve the serializer value from the instance and getters."""
         data = {}
+        exclude = exclude or set()
         for field_name, field in cls.__fields__.items():
-            if hasattr(cls, f"get_{field_name}"):
+            if field_name in exclude:
+                continue
+            elif hasattr(cls, f"get_{field_name}"):
                 data[field_name] = getattr(cls, f"get_{field_name}")(instance=instance)
             elif issubclass(field.type_, ObjectSerializer):
                 related_object = getattr(instance, field_name)
                 if field.shape == SHAPE_LIST:
-                    data[field_name] = field.type_.read_list(related_object) if related_object else []
+                    data[field_name] = (
+                        field.type_.read_list(related_object, exclude=field.field_info.exclude)
+                        if related_object
+                        else []
+                    )
                 else:
-                    data[field_name] = field.type_.read(related_object) if related_object else None
+                    data[field_name] = (
+                        field.type_.read(related_object, exclude=field.field_info.exclude) if related_object else None
+                    )
             else:
                 data[field_name] = getattr(instance, field_name)
         return data
 
     @classmethod
-    def read(cls, instance: ModelType) -> "SerializerType":
+    def read(cls, instance: ModelType, exclude: Union["AbstractSetIntStr"] = None) -> "SerializerType":
         """Serialize a single object instance."""
-        return cls(**cls._get_instance_data(instance))
+        return cls(**cls._get_instance_data(instance, exclude=exclude))
 
     @classmethod
-    def read_list(cls, instance_list: list[ModelType]) -> list["SerializerType"]:
+    def read_list(
+        cls, instance_list: list[ModelType], exclude: Union["AbstractSetIntStr"] = None
+    ) -> list["SerializerType"]:
         """Serialize a list of objects."""
-        return [cls.read(instance) for instance in instance_list]
+        return [cls.read(instance, exclude=exclude) for instance in instance_list]
 
     @classmethod
     def read_page(
@@ -195,3 +206,15 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
             result[field_name] = getattr(self, field_name)
 
         return result
+
+    async def create(self, **kwargs: Any) -> ModelType:
+        """Create the object in the database using the data extracted by the serializer"""
+        instance_class: type[ModelType] = self.__fields__["instance"].type_
+        self.instance = await instance_class(**self.dict()).create()
+        return self.instance
+
+    async def update(self, **kwargs: Any):
+        """Update the object in the database using the data extracted by the serializer"""
+        self.instance = self.instance.copy(update=self.dict())
+        await self.instance.save()
+        return self.instance
