@@ -90,7 +90,7 @@ class ObjectSerializer(Generic[ModelType], BaseModel):
             elif hasattr(cls, f"get_{field_name}"):
                 data[field_name] = getattr(cls, f"get_{field_name}")(instance=instance)
             elif issubclass(field.type_, ObjectSerializer):
-                related_object = getattr(instance, field_name)
+                related_object = getattr(instance, field_name, None)
                 if field.shape == SHAPE_LIST:
                     data[field_name] = (
                         field.type_.read_list(related_object, exclude=field.field_info.exclude)
@@ -169,15 +169,15 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
     ) -> "DictStrAny":
         """Dumps the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
-        exclude = exclude or {}
-        exclude = exclude | {"instance": True}
+        exclude = (exclude or {}) | {"instance": True}
 
         # Some fields are only excluded from being cascade dumps to dict,
         # but their original value is still needed
         exclude_dumps = {}
 
         for field_name, field in self.__fields__.items():
-            field.field_info
+            if field_name in exclude:
+                continue
 
             if issubclass(field.type_, Document):
                 exclude_dumps[field_name] = True
