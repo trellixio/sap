@@ -3,20 +3,19 @@ Auth.
 
 Utils to handle user authentication and permissions.
 """
+import base64
+import binascii
 import time
 import typing
 
 import jwt
-import base64
-import binascii
 
 from fastapi import Cookie, Depends, Request, Response, status
 from fastapi.exceptions import HTTPException
+from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError
 
 from AppMain.settings import AppSettings
 from sap.beanie import Document
-
-from starlette.authentication import AuthenticationBackend, AuthCredentials, AuthenticationError
 
 
 class JWTAuth:
