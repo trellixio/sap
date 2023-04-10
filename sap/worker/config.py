@@ -1,3 +1,12 @@
+"""
+CeleryConfig.
+
+Celery config utility make it easier for app to load celery params
+depending of use case. The different use cases are:
+- LambdaCeleryConfig: Tasks that run on a remote server asynchronously, no need of waiting for result.
+- RPCCeleryConfig: Tasks that run on a remote server synchronously, need to wait for a result.
+- CronCeleryConfig: Periodic tasks that are scheduled.
+"""
 import typing
 
 # do not remove, forcing update of format for better amqp exchanges structures

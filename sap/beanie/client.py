@@ -1,3 +1,8 @@
+"""
+Beanie Client.
+
+Initialize connection to the Mongo Database.
+"""
 import typing
 
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -13,7 +18,7 @@ class BeanieClient:
     connections: typing.ClassVar[dict[str, AsyncIOMotorClient]] = {}
 
     @classmethod
-    async def get_db_default(cls):
+    async def get_db_default(cls) -> AsyncIOMotorClient:
         """Return the default db connection."""
         return cls.connections["default"]
 

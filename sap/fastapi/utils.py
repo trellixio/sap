@@ -75,16 +75,16 @@ class Flash:
 
 
 def base64_url_encode(text: str) -> str:
-    "Encode a b64 for use in URL query by removing `=` character."
+    """Encode a b64 for use in URL query by removing `=` character."""
     return base64.urlsafe_b64encode(text.encode()).rstrip(b"\n=").decode("ascii")
 
 
 def base64_url_decode(text: str) -> str:
-    "Decode a URL safely encoded b64."
+    """Decode a URL safely encoded b64."""
     return base64.urlsafe_b64decode(text.encode().ljust(len(text) + len(text) % 4, b"=")).decode()
 
 
-def merge_dict_deep(a: dict[str, Any], b: dict[str, Any], path=None) -> dict[str, Any]:
+def merge_dict_deep(dict_a: dict[str, Any], dict_b: dict[str, Any], path=None) -> dict[str, Any]:
     """
     Deep merge dictionaries. Merge b into a.
 
@@ -101,23 +101,23 @@ def merge_dict_deep(a: dict[str, Any], b: dict[str, Any], path=None) -> dict[str
     # source: https://stackoverflow.com/questions/7204805/how-to-merge-dictionaries-of-dictionaries/7205107#7205107
     if path is None:
         path = []
-    for key in b:
-        if key in a:
-            if isinstance(a[key], dict) and isinstance(b[key], dict):
-                merge_dict_deep(a[key], b[key], path + [str(key)])
-            elif a[key] == b[key]:
+    for key in dict_b:
+        if key in dict_a:
+            if isinstance(dict_a[key], dict) and isinstance(dict_b[key], dict):
+                merge_dict_deep(dict_a[key], dict_b[key], path + [str(key)])
+            elif dict_a[key] == dict_b[key]:
                 pass  # same leaf value
             else:  # b value is more recent
-                a[key] = b[key]
+                dict_a[key] = dict_b[key]
         else:
-            a[key] = b[key]
-    return a
+            dict_a[key] = dict_b[key]
+    return dict_a
 
 
 unflatten_regex = re.compile(r"(?P<key_parent>\w+)\[(?P<key_child>\w+)\]")
 
 
-def unflatten_form_data(form_data: dict[str, str]) -> dict[str, any]:
+def unflatten_form_data(form_data: dict[str, str]) -> dict[str, Any]:
     """
     Un-flatten a form data and return the corresponding cascading dict.
 
@@ -132,7 +132,7 @@ def unflatten_form_data(form_data: dict[str, str]) -> dict[str, any]:
         { "user": {"first_name": "John", "last_name": "Doe"}}
     ```
     """
-    res: dict[str, any] = {}
+    res: dict[str, Any] = {}
 
     for key, value in form_data.items():
         if reg_match := unflatten_regex.match(key):

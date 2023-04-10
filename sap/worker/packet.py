@@ -23,7 +23,8 @@ DOMAIN_REGEX["queue-name"] = re.compile(r"^[a-zA-Z0-9-_.:@#,/><]*$")
 
 class _Packet:
     """
-    Defines common attributes of packets.
+    Define common attributes of packets.
+
     A Packet represents a message that has been sent to a queue
     in order to execute a task on a remote server.
     """
@@ -40,6 +41,7 @@ class _Packet:
     def __init__(self, topic: str, providing_args: list[str]):
         """
         Initialize the packet. The topic contains the namespace.
+
         :providing_args: A list of arguments used for documentation purposes.
         """
         self.topic = topic
@@ -64,7 +66,7 @@ class _Packet:
 
     @classmethod
     async def get_default_channel(cls) -> aioamqp.channel.Channel:
-        """Return the default channel for the opened connection"""
+        """Return the default channel for the opened connection."""
         connection: AMQPClient = await cls.connection_retrieve()
         # if not connection.channel.is_open:
         #     cls.connections.pop('default')
@@ -74,6 +76,7 @@ class _Packet:
     def exchange_get_name(self, is_fallback: bool = False) -> str:
         """
         Get exchange name.
+
         :is_fallback: if True, get exchange where dead packets are transferred to.
         """
         suffix: str = ".retry" if is_fallback else ""
@@ -82,6 +85,7 @@ class _Packet:
     async def exchange_declare(self, is_fallback: bool = False) -> None:
         """
         Declare the exchange on the AMQP server.
+
         :is_fallback: if True, create a fallback exchange where dead packets are transferred to.
         """
         channel = await self.get_default_channel()
@@ -100,7 +104,8 @@ class _Packet:
 
 class SignalPacket(_Packet):
     """
-    A SignalPacket is a message sent to the messaging queue broker
+    A SignalPacket is a message sent to the messaging queue broker.
+
     to run a task asynchronously on remote server.
     Multiple applications can subscribe to the queue to receive the packets.
     """
@@ -135,12 +140,14 @@ class SignalPacket(_Packet):
     def queue_get_name(self, task_name: str, is_fallback: bool = False) -> str:
         """
         Get queue name.
+
         :is_fallback: if True, get queue where dead packets are transferred to.
         """
         suffix: str = "@retry" if is_fallback else ""
         return f"{self._event_type}:{self.topic}->{task_name}{suffix}"
 
     def queue_get_params(self, task_name: str, is_fallback: bool = False) -> dict[str, typing.Any]:
+        """Retrieve params used to declare the queue."""
         name = self.queue_get_name(task_name=task_name, is_fallback=is_fallback)
         exchange_primary = self.exchange_get_name(is_fallback=False)
         exchange_fallback = self.exchange_get_name(is_fallback=True)

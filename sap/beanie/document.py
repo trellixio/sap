@@ -1,3 +1,10 @@
+"""
+Documents.
+
+Override beanie Documents to useful methods.
+Most of the methods are inspired from Django behavior on querying data.
+"""
+
 import datetime
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Type, Union
 

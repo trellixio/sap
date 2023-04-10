@@ -1,3 +1,8 @@
+"""
+Utils.
+
+Utilities methods to manage worker tasks.
+"""
 import typing
 
 import celery
@@ -37,6 +42,7 @@ from .crons import CronTask
 def match_amqp_topics(topic_alpha: str, topic_beta: str) -> bool:
     """
     Allow comparison on topics pattern.
+
     This method makes it easy to know if topic_a is contained in topic_b.
     """
     parts_alpha = topic_alpha.split(".")
@@ -59,9 +65,7 @@ class CeleryBeatTaskParams(typing.TypedDict, total=True):
 def register_tasks_with_celery_beat(
     celery_app: celery.Celery, tasks: list[CronTask], options: dict[str, str]
 ) -> dict[str, CeleryBeatTaskParams]:
-    """
-    Retrieve all task params to set up celery beat.
-    """
+    """Retrieve all task params to set up celery beat."""
     beat_schedule: dict[str, CeleryBeatTaskParams] = {}
 
     for task in tasks:
@@ -88,7 +92,8 @@ def register_tasks_with_celery_beat(
 )
 def conf(state: State, with_defaults: bool = False, **kwargs: typing.Any) -> dict[str, str]:
     """
-    This overrides the default `conf` inspect command to effectively disable it.
+    Override the default `conf` inspect command to effectively disable it.
+
     This is to stop sensitive configuration information appearing in e.g. Flower.
     (Celery makes an attempt to remove sensitive information, but it is not foolproof.)
     """

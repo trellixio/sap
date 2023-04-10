@@ -24,7 +24,7 @@ class FormValidation:
 
     data: FormData
     errors: dict[str, typing.Any]
-    serializer: pydantic.BaseModel
+    serializer: WriteObjectSerializer
 
 
 async def validate_form(

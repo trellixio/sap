@@ -19,6 +19,12 @@ from sap.beanie import Document
 
 
 class JWTAuth:
+    """JWT cookie authentication utils.
+
+    This can be used to login/logout user with persistent sessions.
+    Mainly useful for Web Apps. For API, it is better to use Basic Authentication in Headers.
+    """
+
     auth_login_url: typing.ClassVar[str] = "/pages/auth/login/"
     auth_cookie_key: typing.ClassVar[str] = "user_session"
     auth_cookie_expires: typing.ClassVar[int] = 60 * 60 * 12  # expiration = 12 hours
@@ -101,10 +107,12 @@ class JWTAuth:
 
 
 class JWTAuthBackend(AuthenticationBackend, JWTAuth):
+    """Starlette Backend to authenticate use through JWT Token in Cookies."""
+
     user_model: type[Document]
 
     def __init__(self, user_model: type[Document]) -> None:
-        """Initializer the authentication backend.
+        """Initialize the authentication backend.
 
         :param user_model_class: The User model.
         """
@@ -112,6 +120,7 @@ class JWTAuthBackend(AuthenticationBackend, JWTAuth):
         self.user_model = user_model
 
     async def authenticate(self, conn):
+        """Authenticate the user using Cookies."""
         if self.get_auth_cookie_key() not in conn.cookies:
             return
 
@@ -128,11 +137,13 @@ class JWTAuthBackend(AuthenticationBackend, JWTAuth):
 
 
 class BasicAuthBackend(AuthenticationBackend):
+    """Starlette Backend to authenticate use through Basic Token in Header."""
+
     user_model: type[Document]
     auth_key_attribute: str
 
     def __init__(self, user_model: type[Document], auth_key_attribute: str = "auth_key") -> None:
-        """Initializer the authentication backend.
+        """Initialize the authentication backend.
 
         :param user_model_class: The User model
         :param auth_key_attribute: The authentication key attribute on the User model
@@ -142,6 +153,7 @@ class BasicAuthBackend(AuthenticationBackend):
         self.auth_key_attribute = auth_key_attribute
 
     async def authenticate(self, conn):
+        """Authenticate the user use the Authorization headers."""
         if "Authorization" not in conn.headers:
             return
 

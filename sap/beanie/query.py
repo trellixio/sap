@@ -20,7 +20,6 @@ async def prefetch_related(item_list: list[ModelType], to_attribute: str) -> Non
     Fetch related attribute efficiently in order to avoid multiple queries that could kill the db.
 
     Example:
-
     ```python
     class ProductCategory(Document):
         name: str
@@ -84,7 +83,6 @@ async def prefetch_related_children(
     Fetch related attribute efficiently in order to avoid multiple queries that could kill the db.
 
     Example:
-
     ```python
     class ProductCategory(Document):
         name: str
@@ -127,7 +125,7 @@ async def prefetch_related_children(
 
 
 def prepare_search_string(search_text: str) -> str:
-    """Clean and reformat the search string"""
+    """Clean and reformat the search string."""
     res = search_text.strip()
     if "@" in res and not '"' in res:
         res = f'"{res}"'

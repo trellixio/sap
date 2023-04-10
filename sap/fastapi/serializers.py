@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 class CursorInfo:
-    """Contains information on how the list should paginated"""
+    """Contains information on how the list should paginated."""
 
     offset: int = 0
     limit: int = 10
@@ -40,7 +40,7 @@ class CursorInfo:
         self.limit, self.offset = int(limit), int(offset)
 
     def get_beanie_query_params(self) -> dict[str, Any[int, str]]:
-        """Return params to apply to the database query when using beanie"""
+        """Return params to apply to the database query when using beanie."""
         return {
             "limit": self.limit,
             "skip": self.offset,
@@ -65,6 +65,7 @@ class ObjectSerializer(Generic[ModelType], BaseModel):
 
     @classmethod
     def get_id(cls, instance: ModelType) -> str:
+        """Return the Mongo ID of the object."""
         return str(instance.id)
 
     @classmethod
@@ -165,8 +166,8 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
             if issubclass(field.type_, WriteObjectSerializer):
                 embedded_serializers[field_name] = field
 
-        field_serializer: WriteObjectSerializer
-        for field_name in embedded_serializers.keys():
+        field_serializer: WriteObjectSerializer[ModelType]
+        for field_name in embedded_serializers:
             if field_serializer := getattr(self, field_name):
                 if self.instance:
                     field_serializer.instance = getattr(self.instance, field_name)
@@ -183,7 +184,7 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
         exclude_defaults: bool = False,
         exclude_none: bool = False,
     ) -> "DictStrAny":
-        """Dumps the serializer data with exclusion of unwanted fields."""
+        """Dump the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
         exclude = (exclude or {}) | {"instance": True}
 
@@ -224,14 +225,14 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
             exclude_none=exclude_none,
         )
 
-        for field_name in exclude_doc_dumps.keys():
+        for field_name in exclude_doc_dumps:
             result[field_name] = getattr(self, field_name)
 
         instance_embedded: BaseModel
         for field_name, field_model in embedded_serializers.items():
             if not result[field_name]:
                 continue
-            elif instance_embedded := getattr(self.instance, field_name, None):
+            if instance_embedded := getattr(self.instance, field_name, None):
                 result[field_name] = instance_embedded.copy(update=result[field_name])
             else:
                 result[field_name] = field_model(**result[field_name])
@@ -239,13 +240,13 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
         return result
 
     async def create(self, **kwargs: Any) -> ModelType:
-        """Create the object in the database using the data extracted by the serializer"""
+        """Create the object in the database using the data extracted by the serializer."""
         instance_class: type[ModelType] = self.__fields__["instance"].type_
         self.instance = await instance_class(**self.dict()).create()
         return self.instance
 
-    async def update(self, **kwargs: Any):
-        """Update the object in the database using the data extracted by the serializer"""
+    async def update(self, **kwargs: Any) -> ModelType:
+        """Update the object in the database using the data extracted by the serializer."""
         self.instance = self.instance.copy(update=self.dict())
         await self.instance.save()
         return self.instance
