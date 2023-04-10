@@ -1,5 +1,5 @@
 """
-Query. 
+Query.
 
 Utils that can be used to optimize db queries and avoid redundant requests.
 """

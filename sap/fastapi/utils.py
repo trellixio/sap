@@ -5,10 +5,10 @@ This file helps you centralized utility functions and classes
 that needs to be re-used but are not a core part of the app logic.
 """
 
-import re
 import base64
-from typing import Any, TYPE_CHECKING
+import re
 from enum import Enum
+from typing import TYPE_CHECKING, Any
 
 from fastapi import Request
 
@@ -107,7 +107,7 @@ def merge_dict_deep(a: dict[str, Any], b: dict[str, Any], path=None) -> dict[str
                 merge_dict_deep(a[key], b[key], path + [str(key)])
             elif a[key] == b[key]:
                 pass  # same leaf value
-            else: # b value is more recent
+            else:  # b value is more recent
                 a[key] = b[key]
         else:
             a[key] = b[key]

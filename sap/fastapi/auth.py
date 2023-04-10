@@ -1,5 +1,5 @@
 """
-Auth. 
+Auth.
 
 Utils to handle user authentication and permissions.
 """
