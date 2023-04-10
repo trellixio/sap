@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, Union
 
 from fastapi import Request
 from pydantic import BaseModel
-from pydantic.fields import SHAPE_LIST
+from pydantic.fields import SHAPE_LIST, ModelField
 
 from sap.beanie.document import Document
 
@@ -156,6 +156,22 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
 
     instance: Optional[ModelType] = None
 
+    async def run_async_validators(self) -> None:
+        """Check that data pass DB validation."""
+
+        field: ModelField
+        embedded_serializers = {}
+        for field_name, field in self.__fields__.items():
+            if issubclass(field.type_, WriteObjectSerializer):
+                embedded_serializers[field_name] = field
+
+        field_serializer: WriteObjectSerializer
+        for field_name in embedded_serializers.keys():
+            if field_serializer := getattr(self, field_name):
+                if self.instance:
+                    field_serializer.instance = getattr(self.instance, field_name)
+                await field_serializer.run_async_validators()
+
     def dict(
         self,
         *,
@@ -173,14 +189,20 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
 
         # Some fields are only excluded from being cascade dumps to dict,
         # but their original value is still needed
-        exclude_dumps = {}
+        exclude_doc_dumps = {}
+
+        # Embedded documents need to be converted to object after dumps
+        embedded_serializers = {}
 
         for field_name, field in self.__fields__.items():
             if field_name in exclude:
                 continue
 
             if issubclass(field.type_, Document):
-                exclude_dumps[field_name] = True
+                exclude_doc_dumps[field_name] = True
+
+            if issubclass(field.type_, WriteObjectSerializer):
+                embedded_serializers[field_name] = field.type_.__fields__["instance"].type_
 
             # Some fields are excluded as they are only needed for create
             if field.field_info.extra.get("exclude_update") and self.instance:
@@ -190,7 +212,7 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
             if field.field_info.extra.get("exclude_create") and not self.instance:
                 exclude[field_name] = True
 
-        exclude = exclude | exclude_dumps
+        exclude = exclude | exclude_doc_dumps
 
         result = super().dict(
             include=include,
@@ -202,8 +224,17 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
             exclude_none=exclude_none,
         )
 
-        for field_name in exclude_dumps:
+        for field_name in exclude_doc_dumps.keys():
             result[field_name] = getattr(self, field_name)
+
+        instance_embedded: BaseModel
+        for field_name, field_model in embedded_serializers.items():
+            if not result[field_name]:
+                continue
+            elif instance_embedded := getattr(self.instance, field_name, None):
+                result[field_name] = instance_embedded.copy(update=result[field_name])
+            else:
+                result[field_name] = field_model(**result[field_name])
 
         return result
 

@@ -13,6 +13,11 @@ class BeanieClient:
     connections: typing.ClassVar[dict[str, AsyncIOMotorClient]] = {}
 
     @classmethod
+    async def get_db_default(cls):
+        """Return the default db connection."""
+        return cls.connections["default"]
+
+    @classmethod
     async def init(
         cls,
         mongo_params: DatabaseParams,
@@ -23,8 +28,8 @@ class BeanieClient:
         :force bool: Use it for force a connection initialization
         """
         # TODO: Check if connection exist, return existing connection
-        if "connection" in cls.connections:
-            # connection = cls.connections["connection"]
+        if "default" in cls.connections:
+            # connection = cls.connections["default"]
             return
 
         client = AsyncIOMotorClient(mongo_params.get_dns())
