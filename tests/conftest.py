@@ -1,3 +1,8 @@
+"""
+Contests.
+
+Initialize testing with module wide fixtures.
+"""
 import asyncio
 import typing
 
@@ -16,7 +21,7 @@ def event_loop() -> typing.Generator[asyncio.events.AbstractEventLoop, None, Non
 
 @pytest.fixture(scope="session")
 def celery_config() -> dict[str, str]:
-    """Setting up Celery worker."""
+    """Set up Celery worker."""
     return {"broker_url": AppSettings.RABBITMQ.get_dns(), "result_backend": AppSettings.REDIS.get_dns()}
 
 

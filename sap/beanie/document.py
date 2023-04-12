@@ -1,5 +1,12 @@
+"""
+Documents.
+
+Override beanie Documents to useful methods.
+Most of the methods are inspired from Django behavior on querying data.
+"""
+
 import datetime
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Type, TypeVar, Union
 
 from pymongo.client_session import ClientSession
 
@@ -77,3 +84,6 @@ class Document(beanie.Document):
         if not result:
             raise Object404Error
         return result
+
+
+TDoc = TypeVar("TDoc", bound=Document)

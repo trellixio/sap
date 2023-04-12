@@ -1,3 +1,8 @@
+"""
+AMQP.
+
+Establish connection to an AMQP server such as RabbitMQ.
+"""
 import asyncio
 
 import aioamqp
@@ -17,6 +22,7 @@ class AMQPClient:
     async def connect(self) -> None:
         """
         Establish connect to the AMQP server.
+
         An `__init__` method can't be a coroutine.
         """
         self.transport, self.protocol = await aioamqp.connect(
