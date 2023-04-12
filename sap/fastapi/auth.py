@@ -119,7 +119,7 @@ class JWTAuthBackend(AuthenticationBackend, JWTAuth):
         super().__init__()
         self.user_model = user_model
 
-    async def authenticate(self, conn):
+    async def authenticate(self, conn)-> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
         """Authenticate the user using Cookies."""
         if self.get_auth_cookie_key() not in conn.cookies:
             return

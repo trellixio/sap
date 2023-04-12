@@ -12,11 +12,10 @@ from fastapi import Request
 from pydantic import BaseModel
 from pydantic.fields import SHAPE_LIST, ModelField
 
-from sap.beanie.document import Document
+from sap.beanie.document import Document, TDoc
 
 from . import utils
 
-ModelType = TypeVar("ModelType", bound=Document)
 # SerializerType = TypeVar("SerializerType", bound=BaseModel)
 
 if TYPE_CHECKING:
@@ -60,28 +59,30 @@ class CursorInfo:
         return utils.base64_url_encode(f"{self.limit},{offset}")
 
 
-class ObjectSerializer(Generic[ModelType], BaseModel):
+class ObjectSerializer(Generic[TDoc], BaseModel):
     """Serialize an object for retrieve or list."""
 
     @classmethod
-    def get_id(cls, instance: ModelType) -> str:
+    def get_id(cls, instance: TDoc) -> str:
         """Return the Mongo ID of the object."""
         return str(instance.id)
 
     @classmethod
-    def get_created(cls, instance: ModelType) -> datetime.datetime:
+    def get_created(cls, instance: TDoc) -> datetime.datetime:
         """Return the user creation date."""
         assert instance.doc_meta.created  # let mypy know that this cannot be null
         return instance.doc_meta.created
 
     @classmethod
-    def get_updated(cls, instance: ModelType) -> datetime.datetime:
+    def get_updated(cls, instance: TDoc) -> datetime.datetime:
         """Return the user creation date."""
         assert instance.doc_meta.updated  # let mypy know that this cannot be null
         return instance.doc_meta.updated
 
     @classmethod
-    def _get_instance_data(cls, instance: ModelType, exclude: Union["AbstractSetIntStr"] = None) -> dict[str, Any]:
+    def _get_instance_data(
+        cls, instance: TDoc, exclude: Union["AbstractSetIntStr", "MappingIntStrAny"] = None
+    ) -> dict[str, Any]:
         """Retrieve the serializer value from the instance and getters."""
         data = {}
         exclude = exclude or set()
@@ -107,13 +108,13 @@ class ObjectSerializer(Generic[ModelType], BaseModel):
         return data
 
     @classmethod
-    def read(cls, instance: ModelType, exclude: Union["AbstractSetIntStr"] = None) -> "SerializerType":
+    def read(cls, instance: TDoc, exclude: Union["AbstractSetIntStr", "MappingIntStrAny"] = None) -> "SerializerType":
         """Serialize a single object instance."""
         return cls(**cls._get_instance_data(instance, exclude=exclude))
 
     @classmethod
     def read_list(
-        cls, instance_list: list[ModelType], exclude: Union["AbstractSetIntStr"] = None
+        cls, instance_list: list[TDoc], exclude: Union["AbstractSetIntStr", "MappingIntStrAny"] = None
     ) -> list["SerializerType"]:
         """Serialize a list of objects."""
         return [cls.read(instance, exclude=exclude) for instance in instance_list]
@@ -121,7 +122,7 @@ class ObjectSerializer(Generic[ModelType], BaseModel):
     @classmethod
     def read_page(
         cls,
-        instance_list: list[ModelType],
+        instance_list: list[TDoc],
         cursor_info: CursorInfo,
         request: Request,
     ) -> PaginatedData["SerializerType"]:
@@ -152,10 +153,10 @@ class PaginatedData(Generic[SerializerType], BaseModel):
     data: list[Any]
 
 
-class WriteObjectSerializer(Generic[ModelType], BaseModel):
+class WriteObjectSerializer(Generic[TDoc], BaseModel):
     """Serialize an object for create or update."""
 
-    instance: Optional[ModelType] = None
+    instance: Optional[TDoc] = None
 
     async def run_async_validators(self) -> None:
         """Check that data pass DB validation."""
@@ -166,7 +167,7 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
             if issubclass(field.type_, WriteObjectSerializer):
                 embedded_serializers[field_name] = field
 
-        field_serializer: WriteObjectSerializer[ModelType]
+        field_serializer: WriteObjectSerializer[TDoc]
         for field_name in embedded_serializers:
             if field_serializer := getattr(self, field_name):
                 if self.instance:
@@ -239,14 +240,15 @@ class WriteObjectSerializer(Generic[ModelType], BaseModel):
 
         return result
 
-    async def create(self, **kwargs: Any) -> ModelType:
+    async def create(self, **kwargs: Any) -> TDoc:
         """Create the object in the database using the data extracted by the serializer."""
-        instance_class: type[ModelType] = self.__fields__["instance"].type_
+        instance_class: type[TDoc] = self.__fields__["instance"].type_
         self.instance = await instance_class(**self.dict()).create()
         return self.instance
 
-    async def update(self, **kwargs: Any) -> ModelType:
+    async def update(self, **kwargs: Any) -> TDoc:
         """Update the object in the database using the data extracted by the serializer."""
+        assert self.instance
         self.instance = self.instance.copy(update=self.dict())
         await self.instance.save()
         return self.instance

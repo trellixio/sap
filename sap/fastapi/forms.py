@@ -4,14 +4,15 @@ Helpers for views.
 Helpers methods used in app.views.
 """
 
-import typing
+
 from dataclasses import dataclass
+from typing import Any, Optional
 
 import pydantic
 from fastapi import Request
 from fastapi.datastructures import FormData
 
-from sap.beanie import Document
+from sap.beanie.document import TDoc
 
 from .exceptions import Validation422Error
 from .serializers import ObjectSerializer, WriteObjectSerializer
@@ -22,19 +23,19 @@ from .utils import Flash, FlashLevel, merge_dict_deep, pydantic_format_errors, u
 class FormValidation:
     """Return the result of data validation for a form serializer."""
 
-    data: FormData
-    errors: dict[str, typing.Any]
-    serializer: WriteObjectSerializer
+    data: dict[str, Any]
+    errors: dict[str, Any]
+    serializer: WriteObjectSerializer[TDoc]
 
 
 async def validate_form(
     request: Request,
-    serializer_write_class: type[WriteObjectSerializer],
-    serializer_read_class: type[ObjectSerializer] = None,
-    instance: Document = None,
+    serializer_write_class: type[WriteObjectSerializer[TDoc]],
+    serializer_read_class: type[ObjectSerializer[TDoc]] = None,
+    instance: TDoc = None,
 ) -> FormValidation:
     """Check that a submitted form pass validation."""
-    form_data: dict[str, typing.Any] = {}
+    form_data: dict[str, Any] = {}
 
     if serializer_read_class and instance:
         # Means this is an update. So we first populate existing data
@@ -43,7 +44,7 @@ async def validate_form(
 
     form_data_received = await request.form()
     form_data = merge_dict_deep(form_data, unflatten_form_data(form_data_received))
-    form_errors: dict[str, typing.Any] = {}
+    form_errors: dict[str, Any] = {}
 
     async def run_validation() -> pydantic.BaseModel:
         """Run serializer validation."""
@@ -51,7 +52,7 @@ async def validate_form(
         await serializer_.run_async_validators()
         return serializer_
 
-    serializer_write: typing.Optional[WriteObjectSerializer] = None
+    serializer_write: Optional[WriteObjectSerializer[TDoc]] = None
 
     try:
         serializer_write = await run_validation()

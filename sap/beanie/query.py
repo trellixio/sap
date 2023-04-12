@@ -8,12 +8,12 @@ import typing
 from beanie import Document, Link, PydanticObjectId, operators
 from beanie.odm.fields import ExpressionField, LinkInfo
 
-ModelType = typing.TypeVar("ModelType", bound=Document)
+from .document import TDoc
 
-RelModelType = typing.TypeVar("RelModelType", bound=Document)  # Related Model Type
+RDoc = typing.TypeVar("RDoc", bound=Document)  # Related Model Type
 
 
-async def prefetch_related(item_list: list[ModelType], to_attribute: str) -> None:
+async def prefetch_related(item_list: list[TDoc], to_attribute: str) -> None:
     """
     Optimize fetching of a related attribute of one-to-one relation.
 
@@ -51,7 +51,7 @@ async def prefetch_related(item_list: list[ModelType], to_attribute: str) -> Non
 
     def get_related_id(item_: Document) -> typing.Optional[PydanticObjectId]:
         """Return the id of the related object."""
-        link: typing.Optional[Link] = getattr(item_, to_attribute)
+        link: typing.Optional[Link[Document]] = getattr(item_, to_attribute)
         if link:
             return link.ref.id
         return None
@@ -66,14 +66,14 @@ async def prefetch_related(item_list: list[ModelType], to_attribute: str) -> Non
 
 
 async def prefetch_related_children(
-    item_list: list[ModelType],
+    item_list: list[TDoc],
     to_attribute: str,
-    related_model: type[RelModelType],
+    related_model: type[RDoc],
     related_attribute: str,
     filter_func: typing.Optional[
         typing.Callable[
-            [list[RelModelType], ModelType],
-            typing.Union[None, RelModelType, list[RelModelType]],
+            [list[RDoc], TDoc],
+            typing.Union[None, RDoc, list[RDoc]],
         ]
     ] = None,
 ) -> None:
@@ -118,7 +118,7 @@ async def prefetch_related_children(
     for item in item_list:
         related_items = []
         for rel in related_item_list:
-            rel_link: Link[RelModelType] = getattr(rel, related_attribute)
+            rel_link: Link[RDoc] = getattr(rel, related_attribute)
             if item.id == rel_link.ref.id:
                 related_items.append(rel)
         setattr(item, to_attribute, filter_func(related_items=related_items, item=item))
