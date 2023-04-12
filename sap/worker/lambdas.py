@@ -1,5 +1,6 @@
 """
 Lambdas refers to async background tasks.
+
 They run code in response to events which are typically messages sent to a queue.
 """
 import asyncio
@@ -19,8 +20,8 @@ from .utils import match_amqp_topics
 
 class LambdaTask(celery.Task):
     """
-    A lambda task is a task that run on a specific event,
-    usually after receiving a packet (message).
+    A lambda task is a task that run on a specific event, usually after receiving a packet (message).
+
     The Lambda will be connected to an AMQP Queue and will listen
     to packets sent to that queue that matches the packet's topic pattern.
     """
@@ -51,9 +52,7 @@ def register_lambda(lambda_task_class: typing.Type[LambdaTask]) -> LambdaTask:
 
 
 class LambdaWorker(celery.bootsteps.ConsumerStep):
-    """
-    Celery worker that consumes packets (messages) sent to lambda queues.
-    """
+    """Celery worker that consumes packets (messages) sent to lambda queues."""
 
     packets: list[SignalPacket]
     name: str
@@ -81,7 +80,9 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
 
     def get_consumers(self, channel: StdChannel) -> list[kombu.Consumer]:
         """
-        Create packet consumers. The consumers are the entrypoint of
+        Create packet consumers.
+
+        The consumers are the entrypoint of
         the application once celery starts receiving messages.
         """
         return [
@@ -96,6 +97,8 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
 
     def consume(self, body: dict[str, typing.Any], message: kombu.Message) -> None:
         """
+        Run the celery worker and consume messages.
+
         This is the entrypoint of the application once celery starts receiving messages.
         All packets received are sent to this function that will acknowledge reception and dispatch
         to registered Lambda tasks.
@@ -116,6 +119,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
     def _propagate_signal(self, body: dict[str, typing.Any], message: kombu.Message) -> None:
         """
         Execute each lambda task that registered to that packet signal.
+
         Lambda tasks are all executed asynchronously and simultaneously through other background celery workers.
         Sometimes this can leads to duplicate key errors or integrity errors.
         """
@@ -126,5 +130,5 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
                 task.apply_async(args=(identifier,), kwargs=body["kwargs"], time_limit=60)
 
     def get_task_list(self) -> list[LambdaTask]:
-        """Retrieves the list of lambda tasks to execute."""
+        """Retrieve the list of lambda tasks to execute."""
         raise NotImplementedError
