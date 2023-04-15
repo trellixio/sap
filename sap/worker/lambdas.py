@@ -18,7 +18,7 @@ from .packet import SignalPacket
 from .utils import match_amqp_topics
 
 
-class LambdaTask(celery.Task):
+class LambdaTask(celery.Task[int]):
     """
     A lambda task is a task that run on a specific event, usually after receiving a packet (message).
 

@@ -6,53 +6,52 @@ Helpers methods used in app.views.
 
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Generic, Optional
 
 import pydantic
 from fastapi import Request
-from fastapi.datastructures import FormData
 
-from sap.beanie.document import TDoc
+from sap.beanie.document import DocT
 
 from .exceptions import Validation422Error
-from .serializers import ObjectSerializer, WriteObjectSerializer
+from .serializers import ObjectSerializer, WriteObjectSerializer, SerializerT
 from .utils import Flash, FlashLevel, merge_dict_deep, pydantic_format_errors, unflatten_form_data
 
 
 @dataclass
-class FormValidation:
+class FormValidation(Generic[SerializerT]):
     """Return the result of data validation for a form serializer."""
 
     data: dict[str, Any]
     errors: dict[str, Any]
-    serializer: WriteObjectSerializer[TDoc]
+    serializer: SerializerT
 
 
 async def validate_form(
     request: Request,
-    serializer_write_class: type[WriteObjectSerializer[TDoc]],
-    serializer_read_class: type[ObjectSerializer[TDoc]] = None,
-    instance: TDoc = None,
-) -> FormValidation:
+    serializer_write_class: type[WriteObjectSerializer[DocT]],
+    serializer_read_class: Optional[type[ObjectSerializer[DocT]]] = None,
+    instance: Optional[DocT] = None,
+) -> FormValidation[DocT]:
     """Check that a submitted form pass validation."""
     form_data: dict[str, Any] = {}
 
     if serializer_read_class and instance:
         # Means this is an update. So we first populate existing data
-        serializer_read: ObjectSerializer = serializer_read_class.read(instance=instance)
+        serializer_read: ObjectSerializer[DocT] = serializer_read_class.read(instance=instance)
         form_data = serializer_read.dict()
 
     form_data_received = await request.form()
     form_data = merge_dict_deep(form_data, unflatten_form_data(form_data_received))
     form_errors: dict[str, Any] = {}
 
-    async def run_validation() -> pydantic.BaseModel:
+    async def run_validation() -> WriteObjectSerializer[DocT]:
         """Run serializer validation."""
         serializer_ = serializer_write_class(**form_data, instance=instance)
         await serializer_.run_async_validators()
         return serializer_
 
-    serializer_write: Optional[WriteObjectSerializer[TDoc]] = None
+    serializer_write: WriteObjectSerializer[DocT]
 
     try:
         serializer_write = await run_validation()
