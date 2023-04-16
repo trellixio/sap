@@ -34,7 +34,7 @@ setup(
         "PyJWT~=2.6",
         "fastAPI~=0.89",
         "itsdangerous~=2.1",
-        "beanie~=1.15",
+        "beanie~=1.15" "passlib~=1.7",
         "motor~=3.1",
         "sqlmodel~=0.0",
         "typing-extensions~=4.5",
