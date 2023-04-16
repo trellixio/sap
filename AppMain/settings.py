@@ -72,4 +72,4 @@ class _Settings(pydantic.BaseSettings):
         env_file = os.getenv("APP_DOTENV", ".env")
 
 
-AppSettings = _Settings()
+AppSettings = _Settings()  # type: ignore

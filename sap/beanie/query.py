@@ -3,17 +3,18 @@ Query.
 
 Utils that can be used to optimize db queries and avoid redundant requests.
 """
-import typing
+from typing import Callable, Optional, Type, TypeVar, Union
 
-from beanie import Document, Link, PydanticObjectId, operators
+from beanie import Document, PydanticObjectId, operators
 from beanie.odm.fields import ExpressionField, LinkInfo
 
-from .document import TDoc
+from .document import DocT
+from .link import Link
 
-RDoc = typing.TypeVar("RDoc", bound=Document)  # Related Model Type
+RDocT = TypeVar("RDocT", bound=Document)  # Related Model Type
 
 
-async def prefetch_related(item_list: list[TDoc], to_attribute: str) -> None:
+async def prefetch_related(item_list: list[DocT], to_attribute: str) -> None:
     """
     Optimize fetching of a related attribute of one-to-one relation.
 
@@ -46,12 +47,15 @@ async def prefetch_related(item_list: list[TDoc], to_attribute: str) -> None:
         return
 
     # Find the model of the related attributed
-    related_field: LinkInfo[Document] = type(item_list[0]).get_link_fields()[to_attribute]
-    related_model: Document = related_field.model_class
+    link_fields = type(item_list[0]).get_link_fields()
+    assert link_fields
+    related_field: LinkInfo = link_fields[to_attribute]
+    assert issubclass(related_field.model_class, Document)
+    related_model: Type[Document] = related_field.model_class
 
-    def get_related_id(item_: Document) -> typing.Optional[PydanticObjectId]:
+    def get_related_id(item_: Document) -> Optional[PydanticObjectId]:
         """Return the id of the related object."""
-        link: typing.Optional[Link[Document]] = getattr(item_, to_attribute)
+        link: Optional[Link[Document]] = getattr(item_, to_attribute)
         if link:
             return link.ref.id
         return None
@@ -60,20 +64,21 @@ async def prefetch_related(item_list: list[TDoc], to_attribute: str) -> None:
     related_item_ids = list(set(get_related_id(item) for item in item_list))
     related_item_list = await related_model.find(operators.In(related_model.id, related_item_ids)).to_list()
     for item in item_list:
-        related_id = get_related_id(item)
-        related_item = next((rel for rel in related_item_list if rel.id == related_id), None) if related_id else None
-        setattr(item, to_attribute, related_item)
+        link: Optional[Link[Document]] = getattr(item, to_attribute)
+        if link:
+            related_item = next((rel for rel in related_item_list if rel.id == link.ref.id), None)
+            setattr(link, "doc", related_item)
 
 
 async def prefetch_related_children(
-    item_list: list[TDoc],
+    item_list: list[DocT],
     to_attribute: str,
-    related_model: type[RDoc],
+    related_model: type[RDocT],
     related_attribute: str,
-    filter_func: typing.Optional[
-        typing.Callable[
-            [list[RDoc], TDoc],
-            typing.Union[None, RDoc, list[RDoc]],
+    filter_func: Optional[
+        Callable[
+            [list[RDocT], DocT],
+            Union[None, RDocT, list[RDocT]],
         ]
     ] = None,
 ) -> None:
@@ -118,10 +123,10 @@ async def prefetch_related_children(
     for item in item_list:
         related_items = []
         for rel in related_item_list:
-            rel_link: Link[RDoc] = getattr(rel, related_attribute)
+            rel_link: Link[RDocT] = getattr(rel, related_attribute)
             if item.id == rel_link.ref.id:
                 related_items.append(rel)
-        setattr(item, to_attribute, filter_func(related_items=related_items, item=item))
+        setattr(item, to_attribute, filter_func(related_items, item))
 
 
 def prepare_search_string(search_text: str) -> str:

@@ -6,8 +6,8 @@ These tasks can run even while the user is not online,
 not making any active HTTP requests, or not using the application.
 """
 
-import typing
 from enum import IntEnum
+from typing import Any, Optional, TypedDict
 
 import celery
 import celery.schedules
@@ -23,7 +23,7 @@ class FetchStrategy(IntEnum):
     OLD: int = 2
 
 
-class CronResponse(typing.TypedDict, total=False):
+class CronResponse(TypedDict, total=False):
     """Define a standard cron task response."""
 
     error: dict[str, str]
@@ -35,11 +35,11 @@ class CronTask(celery.Task):
 
     expires = 60 * 60  # automatically expires if not run within 1 hour
     time_limit = 60 * 60 * 3  # default to 3 hours, automatically kill the task if exceed the limit
-    args: list[typing.Any]
-    kwargs: dict[str, typing.Any]
+    args: list[Any]
+    kwargs: dict[str, Any]
     schedule: celery.schedules.crontab
 
-    def __init__(self, **kwargs: typing.Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize the cron task."""
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -49,11 +49,11 @@ class CronTask(celery.Task):
         """Get Name of the current Task."""
         return cls.__module__.split(".crons", maxsplit=1)[0] + "." + str(cls.__name__)
 
-    def get_queryset(self, *, batch_size: typing.Optional[int] = None, **kwargs: typing.Any) -> typing.Any:
+    def get_queryset(self, *, batch_size: Optional[int] = None, **kwargs: Any) -> Any:
         """Fetch the list of elements to process."""
         raise NotImplementedError
 
-    async def process(self, *, batch_size: int = 100, **kwargs: typing.Any) -> typing.Any:
+    async def process(self, *, batch_size: int = 100, **kwargs: Any) -> Any:
         """Run the cron task and process elements."""
         raise NotImplementedError
 
@@ -61,7 +61,7 @@ class CronTask(celery.Task):
         """Give stats about the number of elements left to process."""
         raise NotImplementedError
 
-    async def run(self) -> CronResponse:
+    async def run(self, *args: Any, **kwargs: Any) -> CronResponse:
         """Run the task and save meta info to Airtable."""
         response: CronResponse
 
@@ -82,7 +82,7 @@ class CronTask(celery.Task):
 def register_crontask(
     crontask_class: type[CronTask],
     schedule: celery.schedules.crontab,
-    kwargs: typing.Optional[dict[str, typing.Any]] = None,
+    kwargs: Optional[dict[str, Any]] = None,
 ) -> CronTask:
     """Register a task on the worker servers."""
     return crontask_class(schedule=schedule, kwargs=kwargs or {})

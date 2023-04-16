@@ -12,7 +12,8 @@ import jwt
 
 from fastapi import Cookie, Depends, Request, Response, status
 from fastapi.exceptions import HTTPException
-from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError
+from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
+from starlette.requests import HTTPConnection
 
 from AppMain.settings import AppSettings
 from sap.beanie import Document
@@ -119,19 +120,19 @@ class JWTAuthBackend(AuthenticationBackend, JWTAuth):
         super().__init__()
         self.user_model = user_model
 
-    async def authenticate(self, conn)-> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
+    async def authenticate(self, conn: HTTPConnection) -> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
         """Authenticate the user using Cookies."""
         if self.get_auth_cookie_key() not in conn.cookies:
-            return
+            return None
 
         jwt_cookie = conn.cookies[self.get_auth_cookie_key()]
 
         try:
             jwt_data = jwt.decode(jwt_cookie, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
-        except jwt.exceptions.InvalidTokenError:
-            raise AuthenticationError("Invalid JWT token")
-        else:
-            user = await self.user_model.get(jwt_data["user_id"])
+        except jwt.exceptions.InvalidTokenError as exc:
+            raise AuthenticationError("Invalid JWT token") from exc
+
+        user = await self.user_model.get_or_404(jwt_data["user_id"])
 
         return AuthCredentials([user.get_scopes()]), user
 
@@ -152,19 +153,19 @@ class BasicAuthBackend(AuthenticationBackend):
         self.user_model = user_model
         self.auth_key_attribute = auth_key_attribute
 
-    async def authenticate(self, conn):
+    async def authenticate(self, conn: HTTPConnection) -> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
         """Authenticate the user use the Authorization headers."""
         if "Authorization" not in conn.headers:
-            return
+            return None
 
         auth = conn.headers["Authorization"]
+        scheme, credentials = auth.split()
+        if scheme.lower() != "basic":
+            return None
         try:
-            scheme, credentials = auth.split()
-            if scheme.lower() != "basic":
-                return
             decoded = base64.b64decode(credentials).decode("ascii")
-        except (ValueError, UnicodeDecodeError, binascii.Error):
-            raise AuthenticationError("Invalid basic auth credentials")
+        except (ValueError, UnicodeDecodeError, binascii.Error) as exc:
+            raise AuthenticationError("Invalid basic auth credentials") from exc
 
         username, _, pwd = decoded.partition(":")
 

@@ -6,7 +6,7 @@ Learn more about FastAPI: https://github.com/tiangolo/fastapi
 """
 
 from .exceptions import Object404Error, Validation422Error
-from .forms import FormData, validate_form
+from .forms import FormValidation, validate_form
 from .serializers import ObjectSerializer, WriteObjectSerializer
 from .utils import Flash, FlashLevel, pydantic_format_errors
 
@@ -22,5 +22,5 @@ __all__ = [
     "Object404Error",
     # Forms
     "validate_form",
-    "FormData",
+    "FormValidation",
 ]
