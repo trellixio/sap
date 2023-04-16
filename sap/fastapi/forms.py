@@ -14,44 +14,44 @@ from fastapi import Request
 from sap.beanie.document import DocT
 
 from .exceptions import Validation422Error
-from .serializers import ObjectSerializer, WriteObjectSerializer, SerializerT
+from .serializers import SerializerT, WSerializerT
 from .utils import Flash, FlashLevel, merge_dict_deep, pydantic_format_errors, unflatten_form_data
 
 
 @dataclass
-class FormValidation(Generic[SerializerT]):
+class FormValidation(Generic[WSerializerT]):
     """Return the result of data validation for a form serializer."""
 
     data: dict[str, Any]
     errors: dict[str, Any]
-    serializer: SerializerT
+    serializer: Optional[WSerializerT]
 
 
 async def validate_form(
     request: Request,
-    serializer_write_class: type[WriteObjectSerializer[DocT]],
-    serializer_read_class: Optional[type[ObjectSerializer[DocT]]] = None,
+    serializer_write_class: type[WSerializerT],
+    serializer_read_class: Optional[type[SerializerT]] = None,
     instance: Optional[DocT] = None,
-) -> FormValidation[DocT]:
+) -> FormValidation[WSerializerT]:
     """Check that a submitted form pass validation."""
     form_data: dict[str, Any] = {}
 
     if serializer_read_class and instance:
         # Means this is an update. So we first populate existing data
-        serializer_read: ObjectSerializer[DocT] = serializer_read_class.read(instance=instance)
+        serializer_read: SerializerT = serializer_read_class.read(instance=instance)
         form_data = serializer_read.dict()
 
     form_data_received = await request.form()
     form_data = merge_dict_deep(form_data, unflatten_form_data(form_data_received))
     form_errors: dict[str, Any] = {}
 
-    async def run_validation() -> WriteObjectSerializer[DocT]:
+    async def run_validation() -> WSerializerT:
         """Run serializer validation."""
-        serializer_ = serializer_write_class(**form_data, instance=instance)
+        serializer_: WSerializerT = serializer_write_class(**form_data, instance=instance)
         await serializer_.run_async_validators()
         return serializer_
 
-    serializer_write: WriteObjectSerializer[DocT]
+    serializer_write: Optional[WSerializerT] = None
 
     try:
         serializer_write = await run_validation()

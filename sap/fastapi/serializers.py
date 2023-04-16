@@ -15,7 +15,6 @@ from pydantic.fields import SHAPE_LIST, ModelField
 from sap.beanie.document import DocT, Document
 
 from . import utils
-from typing_extensions import Self
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, DictStrAny, MappingIntStrAny
@@ -204,8 +203,9 @@ class WriteObjectSerializer(Generic[DocT], BaseModel):
 
             if issubclass(field.type_, Document):
                 exclude_doc_dumps[field_name] = True
+                exclude_[field_name] = True
 
-            if issubclass(field.type_, WriteObjectSerializer):
+            elif issubclass(field.type_, WriteObjectSerializer):
                 embedded_serializers[field_name] = field.type_.__fields__["instance"].type_
 
             # Some fields are excluded as they are only needed for create
@@ -213,10 +213,8 @@ class WriteObjectSerializer(Generic[DocT], BaseModel):
                 exclude_[field_name] = True
 
             # Some fields are excluded as they are only needed for update
-            if field.field_info.extra.get("exclude_create") and not self.instance:
+            elif field.field_info.extra.get("exclude_create") and not self.instance:
                 exclude_[field_name] = True
-
-        exclude_ = exclude_ | exclude_doc_dumps
 
         result = super().dict(
             include=include,
@@ -255,3 +253,6 @@ class WriteObjectSerializer(Generic[DocT], BaseModel):
         await instance.save()
         self.instance = instance
         return instance
+
+
+WSerializerT = TypeVar("WSerializerT", bound=WriteObjectSerializer[Any])

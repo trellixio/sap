@@ -6,7 +6,6 @@ These tasks can run even while the user is not online,
 not making any active HTTP requests, or not using the application.
 """
 
-import typing
 from enum import IntEnum
 from typing import Any, Optional, TypedDict
 
@@ -31,7 +30,7 @@ class CronResponse(TypedDict, total=False):
     result: dict[str, int]
 
 
-class CronTask(celery.Task[int]):
+class CronTask(celery.Task):
     """Define how cron task classes should be structured."""
 
     expires = 60 * 60  # automatically expires if not run within 1 hour

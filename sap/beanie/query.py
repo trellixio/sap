@@ -64,9 +64,10 @@ async def prefetch_related(item_list: list[DocT], to_attribute: str) -> None:
     related_item_ids = list(set(get_related_id(item) for item in item_list))
     related_item_list = await related_model.find(operators.In(related_model.id, related_item_ids)).to_list()
     for item in item_list:
-        related_id = get_related_id(item)
-        related_item = next((rel for rel in related_item_list if rel.id == related_id), None) if related_id else None
-        setattr(item, to_attribute, related_item)
+        link: Optional[Link[Document]] = getattr(item, to_attribute)
+        if link:
+            related_item = next((rel for rel in related_item_list if rel.id == link.ref.id), None)
+            setattr(link, "doc", related_item)
 
 
 async def prefetch_related_children(

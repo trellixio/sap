@@ -6,6 +6,7 @@ Learn more about https://github.com/roman-right/beanie
 """
 from .document import DocMeta, Document
 from .link import Link
+from .patch import Initializer
 from .query import prefetch_related, prefetch_related_children, prepare_search_string
 
 __all__ = [
@@ -15,4 +16,6 @@ __all__ = [
     "prefetch_related",
     "prefetch_related_children",
     "prepare_search_string",
+    # Patching
+    "Initializer",
 ]

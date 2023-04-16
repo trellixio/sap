@@ -20,8 +20,8 @@ black~=23.1
 isort~=5.12
 
 # Linting
-pylint~=2.16
-mypy~=0.991
+pylint~=2.17
+mypy~=1.12
 pydocstyle~=6.3
 
 # Linting: Stubs
