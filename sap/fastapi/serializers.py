@@ -14,49 +14,12 @@ from pydantic.fields import SHAPE_LIST, ModelField
 
 from sap.beanie.document import DocT, Document
 
-from . import utils
+from .pagination import CursorInfo, PaginatedData
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, DictStrAny, MappingIntStrAny
 
     ExcludeType = Union[AbstractSetIntStr, MappingIntStrAny]
-
-
-class CursorInfo:
-    """Contains information on how the list should paginated."""
-
-    offset: int = 0
-    limit: int = 10
-    sort: str = "-doc_meta.created"
-
-    def __init__(self, request: Request) -> None:
-        """Initialize the cursor info."""
-        cursor_str = request.query_params.get("cursor", "")
-        try:
-            limit, offset = utils.base64_url_decode(cursor_str).split(",")
-        except ValueError:
-            return
-        self.limit, self.offset = int(limit), int(offset)
-
-    def get_beanie_query_params(self) -> dict[str, Any[int, str]]:
-        """Return params to apply to the database query when using beanie."""
-        return {
-            "limit": self.limit,
-            "skip": self.offset,
-            "sort": self.sort,
-        }
-
-    def get_next(self) -> Optional[str]:
-        """Get the cursor to paginate forward."""
-        offset = self.offset + self.limit
-        return utils.base64_url_encode(f"{self.limit},{offset}")
-
-    def get_previous(self) -> Optional[str]:
-        """Get the cursor to paginate backward."""
-        offset = self.offset - self.limit
-        if offset <= 0:
-            return None
-        return utils.base64_url_encode(f"{self.limit},{offset}")
 
 
 class ObjectSerializer(Generic[DocT], BaseModel):
@@ -141,16 +104,6 @@ class ObjectSerializer(Generic[DocT], BaseModel):
 SerializerT = TypeVar("SerializerT", bound=ObjectSerializer[Any])
 
 
-class PaginatedData(Generic[SerializerT], BaseModel):
-    """Represent the structure of an API paginated list response."""
-
-    object: str = "list"
-    count: int
-    next: Optional[str]
-    previous: Optional[str]
-    data: list[Any]
-
-
 class WriteObjectSerializer(Generic[DocT], BaseModel):
     """Serialize an object for create or update."""
 
@@ -208,13 +161,13 @@ class WriteObjectSerializer(Generic[DocT], BaseModel):
             elif issubclass(field.type_, WriteObjectSerializer):
                 embedded_serializers[field_name] = field.type_.__fields__["instance"].type_
 
-            # Some fields are excluded as they are only needed for create
-            if field.field_info.extra.get("exclude_update") and self.instance:
-                exclude_[field_name] = True
+            # # Some fields are excluded as they are only needed for create
+            # if field.field_info.extra.get("exclude_update") and self.instance:
+            #     exclude_[field_name] = True
 
-            # Some fields are excluded as they are only needed for update
-            elif field.field_info.extra.get("exclude_create") and not self.instance:
-                exclude_[field_name] = True
+            # # Some fields are excluded as they are only needed for update
+            # elif field.field_info.extra.get("exclude_create") and not self.instance:
+            #     exclude_[field_name] = True
 
         result = super().dict(
             include=include,

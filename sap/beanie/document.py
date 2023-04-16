@@ -28,7 +28,7 @@ class _DocMeta(pydantic.BaseModel):
     source: Optional[str] = ""  # where the data is coming from: webhook, cron
     created: Optional[datetime] = None  # when the document was first imported
     updated: Optional[datetime] = None  # when the document was last updated
-    deleted: Optional[datetime] = None # when the document was deleted, (deleted document may be retained for logging)
+    deleted: Optional[datetime] = None  # when the document was deleted, (deleted document may be retained for logging)
 
 
 class DocMeta(pydantic.BaseModel):
@@ -111,3 +111,4 @@ class Document(beanie.Document):
 
 
 DocT = TypeVar("DocT", bound=Document)
+ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
