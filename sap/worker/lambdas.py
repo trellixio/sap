@@ -4,7 +4,7 @@ Lambdas refers to async background tasks.
 They run code in response to events which are typically messages sent to a queue.
 """
 import asyncio
-import typing
+from typing import Any
 
 import celery
 import celery.bootsteps
@@ -29,7 +29,7 @@ class LambdaTask(celery.Task):
     time_limit: int = 60 * 1  # 1 minutes
     packet: SignalPacket
 
-    def __init__(self, **kwargs: typing.Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize lambda arguments."""
         self.name = self.get_name()
 
@@ -37,16 +37,16 @@ class LambdaTask(celery.Task):
         """Return a human-readable name for this lambda."""
         return self.__module__.split(".lambdas", maxsplit=1)[0] + "." + str(self.__name__)
 
-    def run(self, *args: str, **kwargs: typing.Any) -> dict[str, typing.Any]:
+    def run(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Run the task."""
         return asyncio.run(self.handle_receive(*args, **kwargs))
 
-    async def handle_receive(self, *args: str, **kwargs: typing.Any) -> dict[str, typing.Any]:
+    async def handle_receive(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Perform pre-check such as authentication and run the task."""
         raise NotImplementedError
 
 
-def register_lambda(lambda_task_class: typing.Type[LambdaTask]) -> LambdaTask:
+def register_lambda(lambda_task_class: type[LambdaTask]) -> LambdaTask:
     """Register the Lambda Task to make it discoverable by task runner (celery)."""
     return lambda_task_class()
 
@@ -95,7 +95,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
             )
         ]
 
-    def consume(self, body: dict[str, typing.Any], message: kombu.Message) -> None:
+    def consume(self, body: dict[str, Any], message: kombu.Message) -> None:
         """
         Run the celery worker and consume messages.
 
@@ -116,7 +116,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
         else:
             message.ack()
 
-    def _propagate_signal(self, body: dict[str, typing.Any], message: kombu.Message) -> None:
+    def _propagate_signal(self, body: dict[str, Any], message: kombu.Message) -> None:
         """
         Execute each lambda task that registered to that packet signal.
 
