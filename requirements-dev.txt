@@ -16,18 +16,21 @@
 -r requirements.txt
 
 # Formatting
-black~=23.1
+black~=23.3
 isort~=5.12
+rich~=13.3
 
 # Linting
-pylint~=2.16
-mypy~=0.991
+pylint~=2.17
+mypy~=1.2
 pydocstyle~=6.3
 
 # Linting: Stubs
 types-PyYAML~=6.0
-celery-types~=0.14
+celery-types~=0.15
 motor-stubs~=1.7
+types-setuptools~=67.6
+types-passlib~=1.7
 
 # Testing
 pytest~=7.2
@@ -38,7 +41,6 @@ async-asgi-testclient~=1.4
 pytest-celery~=0.0
 python-dotenv~=1.0
 
-# Devtools/CI/CD
-rich==13.3.2
+# CI/CD
 pre-commit~=3.0
 PyYAML~=6.0

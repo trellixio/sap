@@ -8,7 +8,7 @@ that needs to be re-used but are not a core part of the app logic.
 import base64
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 from fastapi import Request
 
@@ -84,7 +84,7 @@ def base64_url_decode(text: str) -> str:
     return base64.urlsafe_b64decode(text.encode().ljust(len(text) + len(text) % 4, b"=")).decode()
 
 
-def merge_dict_deep(dict_a: dict[str, Any], dict_b: dict[str, Any], path=None) -> dict[str, Any]:
+def merge_dict_deep(dict_a: dict[str, Any], dict_b: dict[str, Any], path: Optional[list[str]] = None) -> dict[str, Any]:
     """
     Deep merge dictionaries. Merge b into a.
 
@@ -117,7 +117,7 @@ def merge_dict_deep(dict_a: dict[str, Any], dict_b: dict[str, Any], path=None) -
 unflatten_regex = re.compile(r"(?P<key_parent>\w+)\[(?P<key_child>\w+)\]")
 
 
-def unflatten_form_data(form_data: dict[str, str]) -> dict[str, Any]:
+def unflatten_form_data(form_data: Mapping[str, Any]) -> dict[str, Any]:
     """
     Un-flatten a form data and return the corresponding cascading dict.
 
