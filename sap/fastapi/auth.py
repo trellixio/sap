@@ -17,6 +17,9 @@ from starlette.requests import HTTPConnection
 
 from AppMain.settings import AppSettings
 from sap.beanie import Document
+from sap.beanie.exceptions import Object404Error
+
+UserT = typing.TypeVar("UserT", bound=Document)
 
 
 class JWTAuth:
@@ -29,96 +32,83 @@ class JWTAuth:
     auth_login_url: typing.ClassVar[str] = "/pages/auth/login/"
     auth_cookie_key: typing.ClassVar[str] = "user_session"
     auth_cookie_expires: typing.ClassVar[int] = 60 * 60 * 12  # expiration = 12 hours
+    user_model: type[Document]
 
-    @classmethod
-    def get_auth_login_url(cls) -> str:
+    def __init__(self, user_model: type[UserT]) -> None:
+        """Initialize the JWT auth helper.
+
+        :param user_model: The User model class.
+        """
+        super().__init__()
+        self.user_model = user_model
+
+    def get_auth_login_url(self) -> str:
         """Retrieve the login url where user are redirect in case of auth failure."""
-        return cls.auth_login_url
+        return self.auth_login_url
 
-    @classmethod
-    def get_auth_cookie_key(cls) -> str:
+    def get_auth_cookie_key(self) -> str:
         """Retrieve key used to define the authentication cookie."""
-        return cls.auth_cookie_key
+        return self.auth_cookie_key
 
-    @classmethod
-    def get_auth_cookie_expires(cls) -> int:
+    def get_auth_cookie_expires(self) -> int:
         """Retrieve validity in seconds of the authentication cookie."""
-        return cls.auth_cookie_expires
+        return self.auth_cookie_expires
 
-    @classmethod
-    def create_token(cls, user: Document, expires: typing.Optional[int] = None) -> str:
+    def create_token(self, user: UserT) -> str:
         """Get JWT temporary token."""
-        expires = cls.get_auth_cookie_expires() if expires is None else expires
+        expires = self.get_auth_cookie_expires()
         jwt_data = {"exp": int(time.time()) + expires, "user_id": str(user.id)}
         return jwt.encode(payload=jwt_data, key=AppSettings.CRYPTO_SECRET, algorithm="HS256")
 
-    @classmethod
-    async def find_user(cls, jwt_token: str, user_model_class: type[Document]) -> Document:
+    async def find_user(self, jwt_token: str) -> Document:
         """
         Verify that JWT token is valid.
 
         :param jwt_token: The lifespan of the token in seconds.
-        :param user_model_class: user model class
         """
-        jwt_data = jwt.decode(jwt_token, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
+
         # Raises: jwt.exceptions.InvalidTokenError => Token has expired or is invalid
+        jwt_data = jwt.decode(jwt_token, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
+        if "user_id" not in jwt_data:
+            raise jwt.exceptions.InvalidAudienceError("Cannot read user_id.")
 
-        user = await user_model_class.find_one_or_404(
-            user_model_class.id == jwt_data["user_id"],
-            user_model_class.is_active == True,
+        # Raises: Object404Error => User cannot be found
+        return await self.user_model.get_or_404(jwt_data["user_id"])
+
+    async def login(self, response: Response, user: UserT) -> Response:
+        """Create a persistent cookie based session for the authenticated user."""
+        response.set_cookie(
+            key=self.get_auth_cookie_key(),
+            value=self.create_token(user=user),
+            httponly=True,
         )
-        # Raise: Object404Error => User cannot be found
-
-        return user
-
-    @classmethod
-    async def login(cls, response: Response, user: Document) -> Response:
-        """Create a persistent cookie based session for the authenticated user."""
-        response.set_cookie(key=cls.get_auth_cookie_key(), value=cls.create_token(user=user), httponly=True)
         return response
 
-    @classmethod
-    async def logout(cls, response: Response) -> Response:
+    async def logout(self, response: Response) -> Response:
         """Create a persistent cookie based session for the authenticated user."""
-        response.delete_cookie(key=cls.get_auth_cookie_key(), httponly=True)
+        response.delete_cookie(key=self.get_auth_cookie_key(), httponly=True)
         return response
 
-    @classmethod
-    def depends(cls, user_model_class: type[Document]) -> typing.Any:
+    def depends(self) -> typing.Any:
         """Provide the authenticated user to views that require it."""
 
         async def retrieve_user(
-            request: Request, jwt_cookie: str = Cookie(default="", alias=cls.get_auth_cookie_key())
-        ) -> "Document":
-            user = None
-            if jwt_cookie:
-                try:
-                    jwt_data = jwt.decode(jwt_cookie, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
-                except jwt.exceptions.InvalidTokenError:
-                    pass
-                else:
-                    user = await user_model_class.get(jwt_data["user_id"])
-            if not user:
+            request: Request,
+            jwt_token: str = Cookie(default="", alias=self.get_auth_cookie_key()),
+        ) -> UserT:
+            try:
+                return await self.find_user(jwt_token=jwt_token)
+            except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
                 raise HTTPException(
-                    status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": cls.get_auth_login_url()}
-                )
-            return user
+                    status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+                    headers={"Location": self.get_auth_login_url()},
+                ) from exc
 
         return Depends(retrieve_user)
 
 
 class JWTAuthBackend(AuthenticationBackend, JWTAuth):
     """Starlette Backend to authenticate use through JWT Token in Cookies."""
-
-    user_model: type[Document]
-
-    def __init__(self, user_model: type[Document]) -> None:
-        """Initialize the authentication backend.
-
-        :param user_model_class: The User model.
-        """
-        super().__init__()
-        self.user_model = user_model
 
     async def authenticate(self, conn: HTTPConnection) -> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
         """Authenticate the user using Cookies."""
@@ -143,10 +133,10 @@ class BasicAuthBackend(AuthenticationBackend):
     user_model: type[Document]
     auth_key_attribute: str
 
-    def __init__(self, user_model: type[Document], auth_key_attribute: str = "auth_key") -> None:
+    def __init__(self, user_model: type[UserT], auth_key_attribute: str = "auth_key") -> None:
         """Initialize the authentication backend.
 
-        :param user_model_class: The User model
+        :param user_model: The User model
         :param auth_key_attribute: The authentication key attribute on the User model
         """
         super().__init__()
