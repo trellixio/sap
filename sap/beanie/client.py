@@ -3,16 +3,17 @@ Beanie Client.
 
 Initialize connection to the Mongo Database.
 """
-from dataclasses import dataclass
 import typing
+from dataclasses import dataclass
 
+import pymongo.errors
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 import beanie
-import pymongo.errors
 
-from sap.settings import DatabaseParams
 from sap.loggers import logger
+from sap.settings import DatabaseParams
+
 
 @dataclass
 class MongoConnection:
@@ -47,7 +48,7 @@ class BeanieClient:
             database: AsyncIOMotorDatabase = cls.connections["default"].database
 
             try:
-                database.command('ping')
+                await database.command("ping")
             except pymongo.errors.ConnectionFailure:
                 logger.debug("--> Invalidate existing MongoDB connection")
             else:

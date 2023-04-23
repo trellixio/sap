@@ -48,8 +48,10 @@ class DatabaseParams(pydantic.BaseModel):
 class SapSettings:
     """Settings params for SAP."""
 
+    APP_ENV: str = os.getenv("APP_ENV", "").upper()
+
     # True is environment is set to DEV
-    is_env_dev: bool = os.getenv("APP_ENV", "").upper() == "DEV"
+    is_env_dev: bool = APP_ENV == "DEV"
 
     # True is environment is set to PROD
-    is_env_prod: bool = os.getenv("APP_ENV", "").upper() == "PROD"
+    is_env_prod: bool = APP_ENV == "PROD"

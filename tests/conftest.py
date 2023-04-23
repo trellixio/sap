@@ -7,8 +7,11 @@ import asyncio
 import typing
 
 import pytest
+import pytest_asyncio
 
+from AppMain.asgi import document_models, initialize_beanie
 from AppMain.settings import AppSettings
+from tests.worker.samples import DummyDoc
 
 
 @pytest.fixture(scope="session")
@@ -17,6 +20,21 @@ def event_loop() -> typing.Generator[asyncio.events.AbstractEventLoop, None, Non
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def initialise_db() -> typing.AsyncGenerator[bool, None]:
+    """Initialize DB connection for all tests."""
+    print("Connecting to MongoDB")
+    print("Initializing Beanie")
+
+    document_models.append(DummyDoc)
+
+    await initialize_beanie()
+
+    yield True  # suspended until tests are done
+
+    print("Disconnecting from MongoDB")
 
 
 @pytest.fixture(scope="session")
