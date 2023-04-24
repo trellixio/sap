@@ -52,19 +52,26 @@ class InitBeanieMiddleware:
     app: ASGIApp
     mongo_params: DatabaseParams
     document_models: list[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]]
+    force: bool = False
 
     def __init__(
         self,
         app: ASGIApp,
         mongo_params: DatabaseParams,
         document_models: list[typing.Union[typing.Type["DocType"], typing.Type["View"], str]],
+        force: bool = False,
     ) -> None:
         """Initialize Middleware."""
         self.app = app
         self.mongo_params = mongo_params
         self.document_models = document_models
+        self.force = force
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Run Middleware."""
-        await BeanieClient.init(mongo_params=self.mongo_params, document_models=self.document_models)
+        await BeanieClient.init(
+            mongo_params=self.mongo_params,
+            document_models=self.document_models,
+            force=self.force,
+        )
         await self.app(scope, receive, send)
