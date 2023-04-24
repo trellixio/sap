@@ -54,7 +54,8 @@ def detect_link(field: ModelField) -> Optional[LinkInfo]:
 
 def init_document_fields(cls) -> None:
     """
-    Init class fields
+    Init class fields.
+
     :return: None
     """
     cls.update_forward_refs()

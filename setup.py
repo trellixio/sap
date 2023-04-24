@@ -10,7 +10,7 @@ long_description = (this_directory / "README.md").read_text()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-VERSION = "0.1.8"
+VERSION = "0.1.9"
 
 setup(
     name="sapx",
@@ -34,7 +34,8 @@ setup(
         "PyJWT~=2.6",
         "fastAPI~=0.89",
         "itsdangerous~=2.1",
-        "beanie~=1.15" "passlib~=1.7",
+        "beanie~=1.15",
+        "passlib~=1.7",
         "motor~=3.1",
         "sqlmodel~=0.0",
         "typing-extensions~=4.5",
