@@ -4,41 +4,60 @@ Beanie Client.
 Initialize connection to the Mongo Database.
 """
 import typing
+from dataclasses import dataclass
 
-from motor.motor_asyncio import AsyncIOMotorClient
+import pymongo.errors
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 import beanie
 
+from sap.loggers import logger
 from sap.settings import DatabaseParams
+
+
+@dataclass
+class MongoConnection:
+    """Define a standard cron task response."""
+
+    client: AsyncIOMotorClient
+    database: AsyncIOMotorDatabase
 
 
 class BeanieClient:
     """Set up a connection to the MongoDB server."""
 
-    connections: typing.ClassVar[dict[str, AsyncIOMotorClient]] = {}
+    connections: typing.ClassVar[dict[str, MongoConnection]] = {}
 
     @classmethod
-    async def get_db_default(cls) -> AsyncIOMotorClient:
+    async def get_db_default(cls) -> AsyncIOMotorDatabase:
         """Return the default db connection."""
-        return cls.connections["default"]
+        return cls.connections["default"].database
 
     @classmethod
     async def init(
         cls,
         mongo_params: DatabaseParams,
         document_models: list[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]],
+        force: bool = False,
     ) -> None:
         """Open and maintain a connection to the database.
 
         :force bool: Use it for force a connection initialization
         """
-        # TODO: Check if connection exist, return existing connection
-        if "default" in cls.connections:
-            # connection = cls.connections["default"]
-            return
+
+        if "default" in cls.connections and not force:
+            database: AsyncIOMotorDatabase = cls.connections["default"].database
+
+            try:
+                await database.command("ping")
+            except pymongo.errors.ConnectionFailure:
+                logger.debug("--> Invalidate existing MongoDB connection")
+            else:
+                logger.debug("--> Using existing MongoDB connection")
+                return
 
         client = AsyncIOMotorClient(mongo_params.get_dns())
-        connection = client[mongo_params.db]
-        cls.connections["default"] = connection
-        await beanie.init_beanie(connection, document_models=document_models)
-        print("--> Initialized beanie")
+        database = client[mongo_params.db]
+        cls.connections["default"] = MongoConnection(client=client, database=database)
+        await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=True)
+        logger.info("--> Establishing new MongoDB connection")

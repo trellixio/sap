@@ -1,5 +1,5 @@
 """
-Stat Serializer. 
+Stat Serializer.
 
 A serializer that helps normalize the format of statistics objects
 """

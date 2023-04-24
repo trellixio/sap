@@ -14,24 +14,27 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
 
 from AppMain.settings import AppSettings
+from sap.beanie.client import BeanieClient
+from sap.fastapi.middleware import InitBeanieMiddleware
 from sap.loggers import logger
 
 # Initialize application
 app = FastAPI(docs_url=None, redoc_url=None, routes=[])
 
+document_models = []
 
 # Register middleware
-# app.add_middleware(middleware.InitBeanieMiddleware, document_models=document_models)
+app.add_middleware(InitBeanieMiddleware, mongo_params=AppSettings.MONGO, document_models=document_models)
 app.add_middleware(SessionMiddleware, session_cookie="starlette", secret_key=AppSettings.CRYPTO_SECRET, max_age=None)
 # if AppSettings.APP_ENV != "PROD":
 #     app.add_middleware(middleware.LogServerErrorMiddleware)
 
 
-# # Events to run on startups
-# @app.on_event("startup")
-# async def initialize_beanie() -> None:
-#     """Initialize beanie on startup."""
-#     await middleware.InitBeanieMiddleware.init_beanie(document_models=document_models, force=True)
+# Events to run on startups
+@app.on_event("startup")
+async def initialize_beanie() -> None:
+    """Initialize beanie on startup."""
+    await BeanieClient.init(mongo_params=AppSettings.MONGO, document_models=document_models)
 
 
 # Always log exception
