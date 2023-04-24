@@ -38,13 +38,14 @@ class BeanieClient:
         cls,
         mongo_params: DatabaseParams,
         document_models: list[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]],
+        force: bool = False,
     ) -> None:
         """Open and maintain a connection to the database.
 
         :force bool: Use it for force a connection initialization
         """
 
-        if "default" in cls.connections:
+        if "default" in cls.connections and not force:
             database: AsyncIOMotorDatabase = cls.connections["default"].database
 
             try:
