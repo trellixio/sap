@@ -5,7 +5,7 @@ A serializer that helps normalize the format of statistics objects
 """
 
 import typing
-from decimal import Decimal
+from decimal import Decimal, DecimalException
 
 import pydantic
 
@@ -29,7 +29,7 @@ class StatSerializer(pydantic.BaseModel):
 
         try:
             percent = Decimal(values["value"]) * 100 / values["total"]
-        except ZeroDivisionError:
+        except (ZeroDivisionError, DecimalException):
             percent = 0
 
         values["percent"] = int(percent)
