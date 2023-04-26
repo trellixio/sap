@@ -4,6 +4,7 @@ Beanie Client.
 Initialize connection to the Mongo Database.
 """
 import typing
+import asyncio
 from dataclasses import dataclass
 
 import pymongo.errors
@@ -39,6 +40,7 @@ class BeanieClient:
         mongo_params: DatabaseParams,
         document_models: list[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]],
         force: bool = False,
+        hijack_motor_loop = True,  # TODO: remove this option, only used for backward compatibility
     ) -> None:
         """Open and maintain a connection to the database.
 
@@ -57,6 +59,8 @@ class BeanieClient:
                 return
 
         client = AsyncIOMotorClient(mongo_params.get_dns())
+        if hijack_motor_loop:
+            client.get_io_loop = asyncio.get_running_loop
         database = client[mongo_params.db]
         cls.connections["default"] = MongoConnection(client=client, database=database)
         await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=True)
