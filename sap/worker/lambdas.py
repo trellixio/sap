@@ -39,6 +39,7 @@ class LambdaTask(celery.Task):
 
     def run(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Run the task."""
+        logger.debug(f"Running task={self.get_name()} {args=} {kwargs=}")
         return asyncio.run(self.handle_receive(*args, **kwargs))
 
     async def handle_receive(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -103,11 +104,11 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
         All packets received are sent to this function that will acknowledge reception and dispatch
         to registered Lambda tasks.
         """
-        # topic = message.delivery_info["routing_key"]
-        # headers = message.headers
-        # is_retry = headers and headers.get("x-death")
-        # if is_retry:
-        #     logger.debug(f"Consuming worker name={self.name} topic={topic} body={body} headers={headers}")
+        topic = message.delivery_info["routing_key"]
+        headers = message.headers
+        is_retry = headers and headers.get("x-death")
+        if is_retry:
+            logger.debug(f"Consuming worker name={self.name} topic={topic} body={body} headers={headers}")
         try:
             self._propagate_signal(body, message)
         except Exception as exc:  # pylint: disable=broad-except
@@ -126,6 +127,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
         topic = message.delivery_info["routing_key"]
         for task in self.get_task_list():
             if match_amqp_topics(task.packet.topic, topic):
+                # logger.debug(f"Matching task.packet.topic={task.packet.topic} topic={topic} task={task.get_name()}")
                 identifier = body.get("identifier") or body.get("card_pid") or body.get("clover_id")
                 task.apply_async(args=(identifier,), kwargs=body["kwargs"], time_limit=60)
 
