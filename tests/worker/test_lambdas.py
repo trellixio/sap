@@ -7,7 +7,9 @@ import celery.worker
 import pytest
 
 from AppMain.settings import AppSettings
+from sap.beanie.client import BeanieClient
 from sap.worker import AMQPClient, LambdaTask, LambdaWorker, SignalPacket, register_lambda
+from .samples import DummyDoc
 
 AMQPClient.db_params = AppSettings.RABBITMQ
 
@@ -20,6 +22,10 @@ class DummyLambdaTask(LambdaTask):
     packet = SignalPacket("sap_tests.app.*.user.created", providing_args=["identifier", "timestamp"])
 
     async def handle_receive(self, *args: str, **kwargs: typing.Any) -> dict[str, typing.Any]:
+        await BeanieClient.init(mongo_params=AppSettings.MONGO, document_models=[DummyDoc])
+        doc = await DummyDoc(num=kwargs["timestamp"]).create()
+        assert doc.id, "DummyDoc has not been created"
+        await doc.delete()
         self.results.append(kwargs["timestamp"])
         return {"result": True}
 

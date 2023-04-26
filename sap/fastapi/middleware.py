@@ -53,6 +53,7 @@ class InitBeanieMiddleware:
     mongo_params: DatabaseParams
     document_models: list[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]]
     force: bool = False
+    hijack_motor_loop: bool = True
 
     def __init__(
         self,
@@ -60,12 +61,14 @@ class InitBeanieMiddleware:
         mongo_params: DatabaseParams,
         document_models: list[typing.Union[typing.Type["DocType"], typing.Type["View"], str]],
         force: bool = False,
+        hijack_motor_loop: bool = True,
     ) -> None:
         """Initialize Middleware."""
         self.app = app
         self.mongo_params = mongo_params
         self.document_models = document_models
         self.force = force
+        self.hijack_motor_loop = hijack_motor_loop
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Run Middleware."""
@@ -73,5 +76,6 @@ class InitBeanieMiddleware:
             mongo_params=self.mongo_params,
             document_models=self.document_models,
             force=self.force,
+            hijack_motor_loop=self.hijack_motor_loop
         )
         await self.app(scope, receive, send)
