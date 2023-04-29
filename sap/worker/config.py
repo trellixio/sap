@@ -77,4 +77,24 @@ class LambdaCeleryConfig(CeleryConfig):
         self.task_reject_on_worker_lost = True
 
 
-LambdaConfig = LambdaCeleryConfig
+
+
+class CronCeleryConfig(CeleryConfig):
+    """Default config params for cron celery applications."""
+
+    proj_node: str = "cron"
+
+    def __init__(self, proj_name: str, is_prod: bool) -> None:
+        """Initialize config."""
+
+        super().__init__(proj_name=proj_name, is_prod=is_prod)
+
+        self.worker_concurrency = 2 if is_prod else 1
+        self.broker_pool_limit = 4 if is_prod else 2
+
+        self.task_create_missing_queues = False
+        self.task_acks_late = False
+        self.task_acks_on_failure_or_timeout = True
+        self.task_reject_on_worker_lost = False
+
+
