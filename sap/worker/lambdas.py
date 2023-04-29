@@ -37,14 +37,18 @@ class LambdaTask(celery.Task):
         """Return a human-readable name for this lambda."""
         return self.__module__.split(".lambdas", maxsplit=1)[0] + "." + str(self.__name__)
 
-    def run(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        """Run the task."""
-        logger.debug(f"Running task={self.get_name()} {args=} {kwargs=}")
-        return asyncio.run(self.handle_receive(*args, **kwargs))
-
-    async def handle_receive(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    async def handle_process(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Perform pre-check such as authentication and run the task."""
         raise NotImplementedError
+
+    async def test_process(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        """Call this method to launch the task in test cases."""
+        return self.handle_process(*args, **kwargs)
+
+    def run(self, *args: Any, **kwargs: Any) -> Any:
+        """Run the task."""
+        logger.debug(f"Running task={self.get_name()} {args=} {kwargs=}")
+        return asyncio.run(self.handle_process(*args, **kwargs))
 
 
 def register_lambda(lambda_task_class: type[LambdaTask]) -> LambdaTask:

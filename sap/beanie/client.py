@@ -3,8 +3,8 @@ Beanie Client.
 
 Initialize connection to the Mongo Database.
 """
-import typing
 import asyncio
+import typing
 from dataclasses import dataclass
 
 import pymongo.errors
@@ -40,7 +40,7 @@ class BeanieClient:
         mongo_params: DatabaseParams,
         document_models: list[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]],
         force: bool = False,
-        hijack_motor_loop = True,  # TODO: remove this option, only used for backward compatibility
+        hijack_motor_loop=True,  # TODO: remove this option, only used for backward compatibility
     ) -> None:
         """Open and maintain a connection to the database.
 

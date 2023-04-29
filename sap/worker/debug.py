@@ -1,20 +1,19 @@
 """
-Celery Tasks Debug. 
+Celery Tasks Debug.
 
-This module contains utilities tasks to debug your cron, lambda or rpc tasks. 
-If your celery tasks are not running as expected, you can use this tasks that will register 
+This module contains utilities tasks to debug your cron, lambda or rpc tasks.
+If your celery tasks are not running as expected, you can use this tasks that will register
 all running activities to help debug where the issue might be.
 """
 
-from typing import Any
 import os
 import time
 from datetime import datetime
-
+from typing import Any
 
 from sap.loggers import logger
 
-from .crons import CronTask, CronStat
+from .crons import CronStat, CronTask
 from .lambdas import LambdaTask
 from .packet import SignalPacket  # , RPCPacket
 
@@ -25,10 +24,11 @@ packet_order = SignalPacket(topic="radix.*.*.order.created", providing_args=["id
 
 class DebugTask:
     """Base for DebugTask."""
+
     name: str
 
     def get_queryset(self, **kwargs: Any) -> str:
-        """Simple queryset that return a datetime string for debugging"""
+        """Simple queryset that return a datetime string for debugging."""
         return str(datetime.now())
 
     async def process(self, *args: Any, **kwargs: Any) -> dict[str, str]:
@@ -45,7 +45,9 @@ class DebugTask:
 
         time.sleep(30)
 
-        logger.warn(f"Running End self.name={self.name} proc.pid={os.getpid()} args={args} kwargs={kwargs} time_now={time_now}")
+        logger.warn(
+            f"Running End self.name={self.name} proc.pid={os.getpid()} args={args} kwargs={kwargs} time_now={time_now}"
+        )
         # raise Exception("I am tired.!")
 
         return {"result": time_now}
@@ -59,14 +61,13 @@ class DebugCronTask(DebugTask, CronTask):
         return [CronStat(name="debug", value=1)]
 
 
-
 class DebugLambdaTask1(DebugTask, LambdaTask):
     """Useful for debugging lambda tasks."""
 
     packet = packet_order
 
-    async def handle_receive(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        """Simulate processing of a lambda task"""
+    async def handle_process(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        """Simulate processing of a lambda task."""
         return await self.process(*args, **kwargs)
 
 
@@ -80,8 +81,8 @@ class DebugLambdaTask2(DebugTask, LambdaTask):
 
     packet = packet_order
 
-    async def handle_receive(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        """Simulate processing of a lambda task"""
+    async def handle_process(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        """Simulate processing of a lambda task."""
         return await self.process(*args, **kwargs)
 
 
