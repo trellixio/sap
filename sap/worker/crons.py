@@ -56,13 +56,15 @@ class BaseCronTask(celery.Task):
 
     expires = 60 * 60  # automatically expires if not run within 1 hour
     time_limit = 60 * 60 * 3  # default to 3 hours, automatically kill the task if exceed the limit
-    args: list[Any]
-    kwargs: dict[str, Any]
+    name: str
+    args: list[Any] = []
+    kwargs: dict[str, Any] = {}
     schedule: celery.schedules.crontab
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, **kw_args: Any) -> None:
         """Initialize the cron task."""
-        for k, v in kwargs.items():
+        self.name = self.get_name()
+        for k, v in kw_args.items():
             setattr(self, k, v)
 
     @classmethod

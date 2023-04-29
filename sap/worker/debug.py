@@ -24,7 +24,8 @@ packet_order = SignalPacket(topic="radix.*.*.order.created", providing_args=["id
 
 
 class DebugTask:
-    name: str = ""
+    """Base for DebugTask."""
+    name: str
 
     def get_queryset(self, **kwargs: Any) -> str:
         """Simple queryset that return a datetime string for debugging"""
@@ -56,10 +57,6 @@ class DebugCronTask(DebugTask, CronTask):
     async def get_stats(self) -> list[CronStat]:
         """Get stats about debug cron."""
         return [CronStat(name="debug", value=1)]
-    
-    async def process(self, *args: Any, **kwargs: Any) -> dict[str, str]:
-        self.name = self.get_name()
-        return await super().process(*args, **kwargs)
 
 
 
@@ -70,7 +67,6 @@ class DebugLambdaTask1(DebugTask, LambdaTask):
 
     async def handle_receive(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Simulate processing of a lambda task"""
-        self.name = self.get_name()
         return await self.process(*args, **kwargs)
 
 
@@ -86,7 +82,6 @@ class DebugLambdaTask2(DebugTask, LambdaTask):
 
     async def handle_receive(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Simulate processing of a lambda task"""
-        self.name = self.get_name()
         return await self.process(*args, **kwargs)
 
 
