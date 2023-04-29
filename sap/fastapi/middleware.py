@@ -76,6 +76,6 @@ class InitBeanieMiddleware:
             mongo_params=self.mongo_params,
             document_models=self.document_models,
             force=self.force,
-            hijack_motor_loop=self.hijack_motor_loop
+            hijack_motor_loop=self.hijack_motor_loop,
         )
         await self.app(scope, receive, send)

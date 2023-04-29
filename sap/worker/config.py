@@ -77,8 +77,6 @@ class LambdaCeleryConfig(CeleryConfig):
         self.task_reject_on_worker_lost = True
 
 
-
-
 class CronCeleryConfig(CeleryConfig):
     """Default config params for cron celery applications."""
 
@@ -96,5 +94,3 @@ class CronCeleryConfig(CeleryConfig):
         self.task_acks_late = False
         self.task_acks_on_failure_or_timeout = True
         self.task_reject_on_worker_lost = False
-
-

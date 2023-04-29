@@ -6,6 +6,7 @@ These tasks can run even while the user is not online,
 not making any active HTTP requests, or not using the application.
 """
 
+import asyncio
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Any, Callable, ClassVar, Optional, TypedDict, TypeVar
@@ -76,31 +77,15 @@ class BaseCronTask(celery.Task):
         """Fetch the list of elements to process."""
         raise NotImplementedError
 
-    async def process(self, *, batch_size: int = 100, **kwargs: Any) -> Any:
-        """Run the cron task and process elements."""
-        raise NotImplementedError
-
     async def get_stats(self) -> list[CronStat]:
         """Give stats about the number of elements left to process."""
         raise NotImplementedError
 
-    async def run_test(self, filter_queryset: Callable[[FindMany[Any]], FindMany[Any]]) -> CronResponse:
-        """Call this method to launch the task in test cases.
+    async def process(self, *, batch_size: int = 100, **kwargs: Any) -> Any:
+        """Run the cron task and process elements."""
+        raise NotImplementedError
 
-        filter_queryset: This allows you to run an extra filtering on the data being processing.
-        Useful if you want to limit the data processing to a specific sample.
-        """
-        original_get_queryset = self.get_queryset
-
-        def mock_get_queryset(batch_size: Optional[int] = None, **kwargs: Any) -> FindMany[Any]:
-            """Replace the normal filter by a new test filter."""
-            queryset = original_get_queryset(batch_size=batch_size, **kwargs)
-            return filter_queryset(queryset)
-
-        with mock.patch.object(self, "get_queryset", side_effect=mock_get_queryset):
-            return await self.run()
-
-    async def run(self, *args: Any, **kwargs: Any) -> CronResponse:
+    async def handle_process(self, *args: Any, **kwargs: Any) -> CronResponse:
         """Run the task and save meta info to Airtable."""
         response: CronResponse
 
@@ -118,6 +103,27 @@ class BaseCronTask(celery.Task):
             response = {"result": result, "status": CronResponseStatus.SUCCESS.value}
 
         return response
+
+    async def test_process(self, filter_queryset: Callable[[FindMany[Any]], FindMany[Any]]) -> CronResponse:
+        """Call this method to launch the task in test cases.
+
+        filter_queryset: This allows you to run an extra filtering on the data being processing.
+        Useful if you want to limit the data processing to a specific sample.
+        """
+        original_get_queryset = self.get_queryset
+
+        def mock_get_queryset(batch_size: Optional[int] = None, **kwargs: Any) -> FindMany[Any]:
+            """Replace the normal filter by a new test filter."""
+            queryset = original_get_queryset(batch_size=batch_size, **kwargs)
+            return filter_queryset(queryset)
+
+        with mock.patch.object(self, "get_queryset", side_effect=mock_get_queryset):
+            return await self.handle_process()
+
+    def run(self, *args: Any, **kwargs: Any) -> Any:
+        """Run the task."""
+        logger.debug(f"Running task={self.get_name()} {args=} {kwargs=}")
+        return asyncio.run(self.handle_process(*args, **kwargs))
 
 
 class CronStorage:
@@ -195,12 +201,7 @@ class CronTask(BaseCronTask):
         """Give stats about the number of elements left to process."""
         raise NotImplementedError
 
-    async def run_test(self, filter_queryset: Callable[[FindMany[Any]], FindMany[Any]]) -> CronResponse:
-        """Call this method to launch the task in test cases."""
-        self.storage = TestStorage(task=self)
-        return await super().run_test(filter_queryset)
-
-    async def run(self, *args: Any, **kwargs: Any) -> CronResponse:
+    async def handle_process(self, *args: Any, **kwargs: Any) -> CronResponse:
         """Run the task and save meta info to Airtable."""
 
         # Record task
@@ -210,7 +211,7 @@ class CronTask(BaseCronTask):
         await self.storage.record_run_start()
 
         # Run the task
-        response = await super().run(*args, **kwargs)
+        response = await super().handle_process(*args, **kwargs)
 
         # Record run end
         await self.storage.record_run_end(response=response)
@@ -222,6 +223,11 @@ class CronTask(BaseCronTask):
         await self.storage.record_stats(stats=stats)
 
         return response
+
+    async def test_process(self, filter_queryset: Callable[[FindMany[Any]], FindMany[Any]]) -> CronResponse:
+        """Call this method to launch the task in test cases."""
+        self.storage = TestStorage(task=self)
+        return await super().test_process(filter_queryset)
 
 
 def register_crontask(
