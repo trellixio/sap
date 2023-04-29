@@ -3,15 +3,17 @@ Test Crons.
 
 Test xlib.tasks utilities.
 """
-from typing import ClassVar, Callable, Optional, Any
+from typing import Any, Callable, ClassVar, Optional
 
 import celery.schedules
 import pytest
+from pyairtable.api.table import Table
 
 from beanie.odm.queries.find import FindMany
-from pyairtable.api.table import Table
+
 from AppMain.settings import AppSettings
-from sap.worker.crons import CronStorage, CronTask, FetchStrategy, CronStat, register_crontask
+from sap.settings import SapSettings
+from sap.worker.crons import CronStat, CronStorage, CronTask, FetchStrategy, register_crontask
 from sap.worker.crons_airtable import AirtableStorage
 
 from .samples import DummyDoc
@@ -77,27 +79,38 @@ def get_filter_queryset_dummy() -> Callable[[FindMany[Any]], FindMany[Any]]:
     return filter_nothing
 
 
-@pytest.mark.parametrize("is_error", [False, True])
-@pytest.mark.asyncio
-async def test_cron_task(is_error: bool) -> None:
-    """Create dummy cron task to ensure that CronTask class is functioning."""
-    task = register_crontask(
+def get_task(is_error: bool) -> CronTask:
+    """Initialize a cron task for testing"""
+    return register_crontask(
         DummyCron,
         schedule=celery.schedules.crontab(hour="12", minute="00", day_of_week="mon"),
         kwargs={"strategy": FetchStrategy.NEW, "batch_size": 20, "error": is_error},
     )
 
-    # with mock.patch.object(pyairtable.Table, "_request", return_value={"records": [{"id": "0"}]}):
-    #     await task.register_to_airtable()
 
-    if AppSettings.AIRTABLE_TOKEN and AppSettings.APP_ENV in ["DEV"]:
+@pytest.mark.parametrize("is_error", [False, True])
+def test_cron_task_run(is_error: bool) -> None:
+    task = get_task(is_error=is_error)
+    # Force the test to behave like if it were a prod environment
+    SapSettings.is_env_prod = True
+
+    if AppSettings.AIRTABLE_TOKEN:
         # Testing that airtable sync is working as expected
-        await task.run()
+        task.run()
 
-    elif is_error:
+    SapSettings.is_env_prod = False
+
+
+@pytest.mark.parametrize("is_error", [False, True])
+@pytest.mark.asyncio
+async def test_cron_task_test_process(is_error: bool) -> None:
+    """Create dummy cron task to ensure that CronTask class is functioning."""
+    task = get_task(is_error=is_error)
+
+    if is_error:
         # Testing that error are raised on dev env on failure
         with pytest.raises(ValueError):
-            await task.run_test(filter_queryset=get_filter_queryset_dummy())
+            await task.test_process(filter_queryset=get_filter_queryset_dummy())
 
     else:
-        await task.run_test(filter_queryset=get_filter_queryset_dummy())
+        await task.test_process(filter_queryset=get_filter_queryset_dummy())
