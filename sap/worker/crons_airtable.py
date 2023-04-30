@@ -59,7 +59,7 @@ class AirtableStorage(CronStorage):
             fields={
                 "Task": [self.task_id],
                 "Status": "Running",
-                "Batch Size": kwargs.get("batch_size", ""),
+                "Batch Size": kwargs.get("batch_size", 0),
                 "Strategy": strategy.name if strategy else "NONE",
                 "Arguments": json.dumps({k: v for k, v in kwargs.items() if k not in ["batch_size", "strategy"]}),
                 "Started": pyairtable.utils.datetime_to_iso_str(datetime.now()),
