@@ -7,9 +7,10 @@ not making any active HTTP requests, or not using the application.
 """
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Any, Callable, ClassVar, Optional, TypedDict, TypeVar
+from typing import Any, Callable, ClassVar, Optional, TypedDict
 from unittest import mock
 
 import celery
@@ -61,6 +62,7 @@ class BaseCronTask(celery.Task):
     args: list[Any] = []
     kwargs: dict[str, Any] = {}
     schedule: celery.schedules.crontab
+    logger: logging.Logger = logger
 
     def __init__(self, **kw_args: Any) -> None:
         """Initialize the cron task."""
@@ -94,7 +96,7 @@ class BaseCronTask(celery.Task):
         except Exception as exc:  # pylint: disable=broad-except;
             if not SapSettings.is_env_prod:
                 raise
-            logger.exception(exc)
+            self.logger.exception(exc)
             response = {
                 "error": {"class": exc.__class__.__name__, "message": str(exc)},
                 "status": CronResponseStatus.ERROR.value,
