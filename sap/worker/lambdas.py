@@ -43,7 +43,7 @@ class LambdaTask(celery.Task):
 
     async def test_process(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Call this method to launch the task in test cases."""
-        return self.handle_process(*args, **kwargs)
+        return await self.handle_process(*args, **kwargs)
 
     def run(self, *args: Any, **kwargs: Any) -> Any:
         """Run the task."""

@@ -51,6 +51,9 @@ class Document(beanie.Document):
 
     doc_meta: _DocMeta = _DocMeta()
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
     @pydantic.root_validator
     @classmethod
     def validate_doc_meta(cls, values: dict[str, Any]) -> dict[str, Any]:
