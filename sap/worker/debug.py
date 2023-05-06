@@ -29,7 +29,7 @@ class DebugTask:
 
     def get_queryset(self, **kwargs: Any) -> str:
         """Simple queryset that return a datetime string for debugging."""
-        return str(datetime.now())
+        return str(datetime.utcnow())
 
     async def process(self, *args: Any, **kwargs: Any) -> dict[str, str]:
         time_now = self.get_queryset()
