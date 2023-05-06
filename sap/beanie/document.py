@@ -33,7 +33,7 @@ class _DocMeta(pydantic.BaseModel):
     """Meta Data allowing to keep trace of Documents versioning and updates."""
 
     version: int = 0  # version of the document being imported
-    source: Optional[DocSource] = ""  # where the data is coming from: webhook, cron
+    source: Optional[DocSource] = None  # where the data is coming from: webhook, cron
     created: Optional[datetime] = None  # when the document was first imported
     updated: Optional[datetime] = None  # when the document was last updated
     deleted: Optional[datetime] = None  # when the document was deleted, (deleted document may be retained for logging)
