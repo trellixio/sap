@@ -62,7 +62,7 @@ class AirtableStorage(CronStorage):
                 "Batch Size": kwargs.get("batch_size", 0),
                 "Strategy": strategy.name if strategy else "NONE",
                 "Arguments": json.dumps({k: v for k, v in kwargs.items() if k not in ["batch_size", "strategy"]}),
-                "Started": pyairtable.utils.datetime_to_iso_str(datetime.now()),
+                "Started": pyairtable.utils.datetime_to_iso_str(datetime.utcnow()),
             }
         )
         self.run_id = run["id"]
@@ -74,7 +74,7 @@ class AirtableStorage(CronStorage):
             fields={
                 "Response": json.dumps(response),
                 "Status": "Error" if "error" in response else "Success",
-                "Ended": pyairtable.utils.datetime_to_iso_str(datetime.now()),
+                "Ended": pyairtable.utils.datetime_to_iso_str(datetime.utcnow()),
             },
         )
 

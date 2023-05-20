@@ -21,7 +21,7 @@ from .samples import DummyDoc
 AIRTABLE_APP = "app9HzOEd8QnsCbJ4"
 
 
-class TestAirtableStorage(AirtableStorage):
+class DummyAirtableStorage(AirtableStorage):
     PROJECT_NAME: ClassVar[str] = "sap"
 
     TABLE_TASKS: ClassVar[Table] = Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Tasks")
@@ -37,7 +37,7 @@ class TestAirtableStorage(AirtableStorage):
 class DummyCron(CronTask):
     """Dummy cron to test that crontask utilities are functioning."""
 
-    storage_class: ClassVar[type[CronStorage]] = TestAirtableStorage
+    storage_class: ClassVar[type[CronStorage]] = DummyAirtableStorage
 
     def get_queryset(self, *, batch_size: Optional[int] = None, **kwargs: Any) -> FindMany[Any]:
         """Return dummy data for testing."""
