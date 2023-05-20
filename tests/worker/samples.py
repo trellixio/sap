@@ -3,12 +3,10 @@ Samples.
 
 Populate the database with dummy data for testing purposes.
 """
-import beanie
-
-from sap.beanie import DocMeta
+from sap.beanie import Document
 
 
-class DummyDoc(beanie.Document, DocMeta):
+class DummyDoc(Document):
     """Dummy document models used to populate the db for testing."""
 
     num: int
