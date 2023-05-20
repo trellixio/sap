@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from beanie.odm.interfaces.find import DocumentProjectionType
 
 
-class DocSource(Enum):
+class DocSourceEnum(Enum):
     """Source where a document has been fetched from."""
 
     WEBHOOK: str = "webhook"
@@ -33,7 +33,7 @@ class _DocMeta(pydantic.BaseModel):
     """Meta Data allowing to keep trace of Documents versioning and updates."""
 
     version: int = 0  # version of the document being imported
-    source: Optional[DocSource] = None  # where the data is coming from: webhook, cron
+    source: Optional[DocSourceEnum] = None  # where the data is coming from: webhook, cron
     created: Optional[datetime] = None  # when the document was first imported
     updated: Optional[datetime] = None  # when the document was last updated
     deleted: Optional[datetime] = None  # when the document was deleted, (deleted document may be retained for logging)
