@@ -33,13 +33,23 @@ class RestAPIError(Exception):
         """Add error data."""
         super().__init__(*args)
         self.data = data
-        if data and data.get("error"):  # verify if error is in data and if it is not empty
-            if isinstance(data["error"], str):
-                self.message = data["error"]
-            elif isinstance(data["error"], list) and isinstance(data["error"][0], str):
-                self.message = ". ".join(data["error"])
-            elif "message" in data["error"]:
-                self.message = data["error"]["message"]
+
+        if not data:
+            return
+
+        # verify if `error` is in data and if it is not empty
+        if error_ := data.get("error"):
+            if isinstance(error_, str):
+                self.message = error_
+            elif isinstance(error_, list) and isinstance(error_[0], str):
+                self.message = ". ".join(error_)
+            elif isinstance(error_, dict) and "message" in error_:
+                self.message = error_["message"]
+
+        # verify if `message` is in data and if it is not empty
+        if message_ := data.get("message"):
+            if isinstance(message_, str):
+                self.message = message_
 
 
 class Rest400Error(RestAPIError):
