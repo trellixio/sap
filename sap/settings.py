@@ -35,7 +35,7 @@ class DatabaseParams(pydantic.BaseModel):
     password: str = ""
     db: str = "sap"
     host: str = "localhost"
-    port: str = "27017"
+    port: str = ""
     params: str = ""
 
     def get_dns(self) -> str:
