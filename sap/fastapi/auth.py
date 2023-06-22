@@ -7,10 +7,12 @@ import base64
 import binascii
 import time
 import typing
+import warnings
 
 import jwt
 
-from fastapi import Cookie, Depends, Request, Response, status
+from fastapi import Cookie, Depends, Request, Response
+from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401, HTTP_307_TEMPORARY_REDIRECT as HTTP_307
 from fastapi.exceptions import HTTPException
 from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
 from starlette.requests import HTTPConnection
@@ -92,19 +94,27 @@ class JWTAuth:
     def depends(self) -> typing.Any:
         """Provide the authenticated user to views that require it."""
 
-        async def retrieve_user(
-            request: Request,
-            jwt_token: str = Cookie(default="", alias=self.get_auth_cookie_key()),
-        ) -> UserT:
+        warnings.warn(
+            "`jwt_auth.depends()` has been deprecated. Use `Depends(jwt_auth.authenticate())` instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        async def retrieve_user(jwt_token: str = Cookie(default="", alias=self.get_auth_cookie_key())) -> UserT:
             try:
                 return await self.find_user(jwt_token=jwt_token)
             except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-                    headers={"Location": self.get_auth_login_url()},
-                ) from exc
+                raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url()}) from exc
 
         return Depends(retrieve_user)
+
+    async def authenticate(self, request: Request) -> UserT:
+        """Provide the authenticated user to views that require it."""
+        try:
+            jwt_token = request.cookies[self.get_auth_cookie_key()]
+            return await self.find_user(jwt_token=jwt_token)
+        except (KeyError, Object404Error, jwt.exceptions.InvalidTokenError) as exc:
+            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url()}) from exc
 
 
 class JWTAuthBackend(AuthenticationBackend, JWTAuth):
@@ -127,39 +137,49 @@ class JWTAuthBackend(AuthenticationBackend, JWTAuth):
         return AuthCredentials([user.get_scopes()]), user
 
 
-class BasicAuthBackend(AuthenticationBackend):
-    """Starlette Backend to authenticate use through Basic Token in Header."""
+class BasicAuth:
+    """Basic authentication utils.
+
+    This can be used to authenticate user with through `Authorization` header using the Basic protocol.
+    Mainly useful for API access. For web app, check JWTAuth which support persistent cookie session.
+    """
 
     user_model: type[Document]
-    auth_key_attribute: str
+    auth_key_attribute: typing.ClassVar[str] = "auth_key"
 
-    def __init__(self, user_model: type[UserT], auth_key_attribute: str = "auth_key") -> None:
-        """Initialize the authentication backend.
+    def __init__(self, user_model: type[UserT]) -> None:
+        """Initialize the auth helper.
 
-        :param user_model: The User model
-        :param auth_key_attribute: The authentication key attribute on the User model
+        :param user_model: The User model class.
         """
         super().__init__()
         self.user_model = user_model
-        self.auth_key_attribute = auth_key_attribute
 
-    async def authenticate(self, conn: HTTPConnection) -> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
-        """Authenticate the user use the Authorization headers."""
-        if "Authorization" not in conn.headers:
-            return None
+    def get_auth_key_attribute(self) -> str:
+        """Retrieve name of the `auth_key` attribute use to verify user."""
+        return self.auth_key_attribute
 
-        auth = conn.headers["Authorization"]
-        scheme, credentials = auth.split()
+    async def authenticate(self, request: Request) -> UserT:
+        """Provide the authenticated user to views that require it."""
+
+        header_auth: str = request.headers.get("Authorization")
+        if not header_auth:
+            raise HTTPException(HTTP_401, detail="Authentication required")
+
+        scheme, credentials = header_auth.split()
         if scheme.lower() != "basic":
-            return None
+            raise HTTPException(HTTP_401, detail="Only basic authorization is supported")
+
         try:
             decoded = base64.b64decode(credentials).decode("ascii")
         except (ValueError, UnicodeDecodeError, binascii.Error) as exc:
-            raise AuthenticationError("Invalid basic auth credentials") from exc
+            raise HTTPException(HTTP_401, detail="Error while decoding basic auth credentials") from exc
 
         username, _, pwd = decoded.partition(":")
 
-        auth_key = getattr(self.user_model, self.auth_key_attribute)
-        user = await self.user_model.find_one_or_404(auth_key == (username or pwd))
+        auth_key = getattr(self.user_model, self.get_auth_key_attribute())
 
-        return AuthCredentials(user.get_scopes()), user
+        try:
+            return await self.user_model.find_one_or_404(auth_key == (username or pwd))
+        except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
+            raise HTTPException(HTTP_401, detail="Invalid basic auth credentials") from exc

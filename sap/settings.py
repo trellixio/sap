@@ -18,6 +18,7 @@ class IntegrationParams(pydantic.BaseModel):
     beans_secret: str = ""
     third_party_public: str = ""
     third_party_secret: str = ""
+    third_party_bearer: str = ""
     is_status_available: bool = True
 
 
