@@ -155,7 +155,7 @@ class BasicAuth:
         super().__init__()
         self.user_model = user_model
 
-    def get_auth_key_attribute(self) -> str:
+    def get_auth_key_attribute(self) -> typing.Optional[str]:
         """Retrieve name of the `auth_key` attribute use to verify user."""
         return self.auth_key_attribute
 
@@ -176,10 +176,18 @@ class BasicAuth:
             raise HTTPException(HTTP_401, detail="Error while decoding basic auth credentials") from exc
 
         username, _, pwd = decoded.partition(":")
+        user_key = username or pwd
 
-        auth_key = getattr(self.user_model, self.get_auth_key_attribute())
+        if auth_key_name:=self.get_auth_key_attribute():
+            auth_key = getattr(self.user_model, auth_key_name)
+        else: 
+            auth_key = None
 
         try:
-            return await self.user_model.find_one_or_404(auth_key == (username or pwd))
+            if auth_key:
+                return await self.user_model.find_one_or_404(auth_key == user_key)
+            else:
+                return await self.user_model.get_or_404(user_key)
         except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
             raise HTTPException(HTTP_401, detail="Invalid basic auth credentials") from exc
+
