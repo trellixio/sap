@@ -44,11 +44,11 @@ class JWTAuth:
         super().__init__()
         self.user_model = user_model
 
-    def get_auth_login_url(self) -> str:
+    def get_auth_login_url(self, request: Request) -> str:
         """Retrieve the login url where user are redirect in case of auth failure."""
         return self.auth_login_url
 
-    def get_auth_cookie_key(self) -> str:
+    def get_auth_cookie_key(self, request: Request) -> str:
         """Retrieve key used to define the authentication cookie."""
         return self.auth_cookie_key
 
@@ -77,44 +77,27 @@ class JWTAuth:
         # Raises: Object404Error => User cannot be found
         return await self.user_model.get_or_404(jwt_data["user_id"])
 
-    async def login(self, response: Response, user: UserT) -> Response:
+    async def login(self, response: Response, request: Request, user: UserT) -> Response:
         """Create a persistent cookie based session for the authenticated user."""
         response.set_cookie(
-            key=self.get_auth_cookie_key(),
+            key=self.get_auth_cookie_key(request),
             value=self.create_token(user=user),
             httponly=True,
         )
         return response
 
-    async def logout(self, response: Response) -> Response:
+    async def logout(self, response: Response, request: Request) -> Response:
         """Create a persistent cookie based session for the authenticated user."""
-        response.delete_cookie(key=self.get_auth_cookie_key(), httponly=True)
+        response.delete_cookie(key=self.get_auth_cookie_key(request), httponly=True)
         return response
-
-    def depends(self) -> typing.Any:
-        """Provide the authenticated user to views that require it."""
-
-        warnings.warn(
-            "`jwt_auth.depends()` has been deprecated. Use `Depends(jwt_auth.authenticate())` instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        async def retrieve_user(jwt_token: str = Cookie(default="", alias=self.get_auth_cookie_key())) -> UserT:
-            try:
-                return await self.find_user(jwt_token=jwt_token)
-            except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
-                raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url()}) from exc
-
-        return Depends(retrieve_user)
 
     async def authenticate(self, request: Request) -> UserT:
         """Provide the authenticated user to views that require it."""
         try:
-            jwt_token = request.cookies[self.get_auth_cookie_key()]
+            jwt_token = request.cookies[self.get_auth_cookie_key(request)]
             return await self.find_user(jwt_token=jwt_token)
         except (KeyError, Object404Error, jwt.exceptions.InvalidTokenError) as exc:
-            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url()}) from exc
+            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url(request)}) from exc
 
 
 class JWTAuthBackend(AuthenticationBackend, JWTAuth):
@@ -122,10 +105,11 @@ class JWTAuthBackend(AuthenticationBackend, JWTAuth):
 
     async def authenticate(self, conn: HTTPConnection) -> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
         """Authenticate the user using Cookies."""
-        if self.get_auth_cookie_key() not in conn.cookies:
+        cookie_key: str = self.get_auth_cookie_key(request=conn)
+        if cookie_key not in conn.cookies:
             return None
 
-        jwt_cookie = conn.cookies[self.get_auth_cookie_key()]
+        jwt_cookie = conn.cookies[cookie_key]
 
         try:
             jwt_data = jwt.decode(jwt_cookie, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
