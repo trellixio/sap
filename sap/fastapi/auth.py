@@ -7,7 +7,6 @@ import base64
 import binascii
 import time
 import typing
-import warnings
 
 import jwt
 
