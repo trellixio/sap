@@ -19,7 +19,7 @@ def detect_link(field: ModelField) -> Optional[LinkInfo]:
     :param field: ModelField
     :return: Optional[LinkInfo]
     """
-    if issubclass(field.type_, Link):
+    if inspect.isclass(field.type_) and issubclass(field.type_, Link):
         if field.allow_none is True:
             return LinkInfo(
                 field=field.name,

@@ -11,10 +11,11 @@ import typing
 import jwt
 
 from fastapi import Cookie, Depends, Request, Response
-from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401, HTTP_307_TEMPORARY_REDIRECT as HTTP_307
 from fastapi.exceptions import HTTPException
 from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
 from starlette.requests import HTTPConnection
+from starlette.status import HTTP_307_TEMPORARY_REDIRECT as HTTP_307
+from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401
 
 from AppMain.settings import AppSettings
 from sap.beanie import Document
@@ -161,9 +162,9 @@ class BasicAuth:
         username, _, pwd = decoded.partition(":")
         user_key = username or pwd
 
-        if auth_key_name:=self.get_auth_key_attribute():
+        if auth_key_name := self.get_auth_key_attribute():
             auth_key = getattr(self.user_model, auth_key_name)
-        else: 
+        else:
             auth_key = None
 
         try:
@@ -173,4 +174,3 @@ class BasicAuth:
                 return await self.user_model.get_or_404(user_key)
         except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
             raise HTTPException(HTTP_401, detail="Invalid basic auth credentials") from exc
-
