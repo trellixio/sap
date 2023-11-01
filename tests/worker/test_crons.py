@@ -24,14 +24,20 @@ AIRTABLE_APP = "app9HzOEd8QnsCbJ4"
 class DummyAirtableStorage(AirtableStorage):
     PROJECT_NAME: ClassVar[str] = "sap"
 
-    TABLE_TASKS: ClassVar[Table] = Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Tasks")
-    TABLE_RUNS: ClassVar[Table] = Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Runs")
-    TABLE_STATS: ClassVar[Table] = Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Stats")
-
     @classmethod
     def get_env_params(cls) -> tuple[str, str]:
         """Return env name and env id on airtable"""
         return "TEST", "rec8deejyHcQzGVda"
+
+    def get_airtable(table_name: str = "") -> Table:
+        """Return instance of the table to use give the table_name."""
+        if table_name == "tasks":
+            return Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Tasks")
+        if table_name == "runs":
+            return Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Runs")
+        if table_name == "stats":
+            return Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Stats")
+        raise NotImplementedError
 
 
 class DummyCron(CronTask):
