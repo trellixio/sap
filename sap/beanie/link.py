@@ -46,7 +46,7 @@ class Link(beanie.Link[DocT]):
         """Overwrite fetch to force missing doc to raise error."""
         if self.doc:
             return self.doc
-        self.doc = await self.model_class.get_or_404(self.ref.id, with_children=True, fetch_links=fetch_links)
+        self.doc = await self.document_class.get_or_404(self.ref.id, with_children=True, fetch_links=fetch_links)
         return self.doc
 
 
