@@ -36,12 +36,10 @@ class Link(beanie.Link[DocT]):
     model_class: Type[DocT]
     doc: Optional[DocT]  # This is the prefetched T document
 
-    def __init__(self, ref: DBRef, model_class: Type[DocT]) -> None:
+    def __init__(self, ref: DBRef, document_class: Type[DocT]) -> None:
         """Initialize object."""
-        super().__init__(ref=ref, model_class=model_class)
-        self.ref = ref
+        super().__init__(ref=ref, document_class=document_class)
         self.id = ref.id
-        self.model_class = model_class
         self.doc = None
 
     async def fetch(self, fetch_links: bool = False) -> DocT:

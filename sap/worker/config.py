@@ -94,3 +94,7 @@ class CronCeleryConfig(CeleryConfig):
         self.task_acks_late = False
         self.task_acks_on_failure_or_timeout = True
         self.task_reject_on_worker_lost = False
+
+        # default to 3 hours, automatically send stop signal to the task if exceed the limit
+        self.task_soft_time_limit = 60 * 60 * 3
+        self.task_time_limit = 60 * 60 * 3
