@@ -24,7 +24,7 @@ class AirtableStorage(CronStorage):
 
     PROJECT_NAME: ClassVar[str]
 
-    def get_airtable(table_name: str = "") -> Table:
+    def get_airtable(self, table_name: str = "") -> Table:
         """Return instance of the table to use give the table_name."""
         raise NotImplementedError
 
