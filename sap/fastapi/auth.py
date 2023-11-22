@@ -7,15 +7,16 @@ import base64
 import binascii
 import time
 import typing
-import warnings
 
 import jwt
 
-from fastapi import Cookie, Depends, Request, Response
-from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401, HTTP_307_TEMPORARY_REDIRECT as HTTP_307
+from fastapi import Request, Response
 from fastapi.exceptions import HTTPException
-from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
-from starlette.requests import HTTPConnection
+
+# from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
+# from starlette.requests import HTTPConnection
+from starlette.status import HTTP_307_TEMPORARY_REDIRECT as HTTP_307
+from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401
 
 from AppMain.settings import AppSettings
 from sap.beanie import Document
@@ -44,11 +45,11 @@ class JWTAuth:
         super().__init__()
         self.user_model = user_model
 
-    def get_auth_login_url(self) -> str:
+    def get_auth_login_url(self, request: Request) -> str:
         """Retrieve the login url where user are redirect in case of auth failure."""
         return self.auth_login_url
 
-    def get_auth_cookie_key(self) -> str:
+    def get_auth_cookie_key(self, request: Request) -> str:
         """Retrieve key used to define the authentication cookie."""
         return self.auth_cookie_key
 
@@ -77,64 +78,49 @@ class JWTAuth:
         # Raises: Object404Error => User cannot be found
         return await self.user_model.get_or_404(jwt_data["user_id"])
 
-    async def login(self, response: Response, user: UserT) -> Response:
+    async def login(self, response: Response, request: Request, user: UserT) -> Response:
         """Create a persistent cookie based session for the authenticated user."""
         response.set_cookie(
-            key=self.get_auth_cookie_key(),
+            key=self.get_auth_cookie_key(request),
             value=self.create_token(user=user),
             httponly=True,
         )
         return response
 
-    async def logout(self, response: Response) -> Response:
+    async def logout(self, response: Response, request: Request) -> Response:
         """Create a persistent cookie based session for the authenticated user."""
-        response.delete_cookie(key=self.get_auth_cookie_key(), httponly=True)
+        response.delete_cookie(key=self.get_auth_cookie_key(request), httponly=True)
         return response
-
-    def depends(self) -> typing.Any:
-        """Provide the authenticated user to views that require it."""
-
-        warnings.warn(
-            "`jwt_auth.depends()` has been deprecated. Use `Depends(jwt_auth.authenticate())` instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        async def retrieve_user(jwt_token: str = Cookie(default="", alias=self.get_auth_cookie_key())) -> UserT:
-            try:
-                return await self.find_user(jwt_token=jwt_token)
-            except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
-                raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url()}) from exc
-
-        return Depends(retrieve_user)
 
     async def authenticate(self, request: Request) -> UserT:
         """Provide the authenticated user to views that require it."""
         try:
-            jwt_token = request.cookies[self.get_auth_cookie_key()]
+            jwt_token = request.cookies[self.get_auth_cookie_key(request)]
             return await self.find_user(jwt_token=jwt_token)
         except (KeyError, Object404Error, jwt.exceptions.InvalidTokenError) as exc:
-            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url()}) from exc
+            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url(request)}) from exc
 
 
-class JWTAuthBackend(AuthenticationBackend, JWTAuth):
-    """Starlette Backend to authenticate use through JWT Token in Cookies."""
+# class JWTAuthBackend(AuthenticationBackend, JWTAuth):
+#     """Starlette Backend to authenticate use through JWT Token in Cookies."""
 
-    async def authenticate(self, conn: HTTPConnection) -> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
-        """Authenticate the user using Cookies."""
-        if self.get_auth_cookie_key() not in conn.cookies:
-            return None
+#     async def authenticate(self, request: HTTPConnection) -> UserT:
+#         """Authenticate the user using Cookies."""
+#         cookie_key: str = self.get_auth_cookie_key(request=request)
+#         if cookie_key not in request.cookies:
+#             raise AuthenticationError("Unable to find JWT cookie")
 
-        jwt_cookie = conn.cookies[self.get_auth_cookie_key()]
+#         jwt_cookie = request.cookies[cookie_key]
 
-        try:
-            jwt_data = jwt.decode(jwt_cookie, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
-        except jwt.exceptions.InvalidTokenError as exc:
-            raise AuthenticationError("Invalid JWT token") from exc
+#         try:
+#             jwt_data = jwt.decode(jwt_cookie, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
+#         except jwt.exceptions.InvalidTokenError as exc:
+#             raise AuthenticationError("Invalid JWT token") from exc
 
-        user = await self.user_model.get_or_404(jwt_data["user_id"])
+#         user = await self.user_model.get_or_404(jwt_data["user_id"])
 
-        return AuthCredentials([user.get_scopes()]), user
+#         return user
+#         # return AuthCredentials([user.get_scopes()]), user
 
 
 class BasicAuth:
@@ -162,7 +148,7 @@ class BasicAuth:
     async def authenticate(self, request: Request) -> UserT:
         """Provide the authenticated user to views that require it."""
 
-        header_auth: str = request.headers.get("Authorization")
+        header_auth: typing.Optional[str] = request.headers.get("Authorization")
         if not header_auth:
             raise HTTPException(HTTP_401, detail="Authentication required")
 
@@ -178,16 +164,14 @@ class BasicAuth:
         username, _, pwd = decoded.partition(":")
         user_key = username or pwd
 
-        if auth_key_name:=self.get_auth_key_attribute():
+        if auth_key_name := self.get_auth_key_attribute():
             auth_key = getattr(self.user_model, auth_key_name)
-        else: 
+        else:
             auth_key = None
 
         try:
             if auth_key:
                 return await self.user_model.find_one_or_404(auth_key == user_key)
-            else:
-                return await self.user_model.get_or_404(user_key)
+            return await self.user_model.get_or_404(user_key)
         except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
             raise HTTPException(HTTP_401, detail="Invalid basic auth credentials") from exc
-

@@ -24,9 +24,9 @@ class AirtableStorage(CronStorage):
 
     PROJECT_NAME: ClassVar[str]
 
-    TABLE_TASKS: ClassVar[Table]
-    TABLE_RUNS: ClassVar[Table]
-    TABLE_STATS: ClassVar[Table]
+    def get_airtable(self, table_name: str = "") -> Table:
+        """Return instance of the table to use give the table_name."""
+        raise NotImplementedError
 
     @classmethod
     def get_env_params(cls) -> tuple[str, str]:
@@ -38,16 +38,16 @@ class AirtableStorage(CronStorage):
         env_name, env_id = self.get_env_params()
 
         query = {"Env": env_name, "Name": self.task_name}
-        task_info = self.TABLE_TASKS.first(formula=pyOps.match(query), fields=["Name", "Env"])  # type: ignore
+        task_info = self.get_airtable("tasks").first(formula=pyOps.match(query), fields=["Name", "Env"])  # type: ignore
         if task_info:
             self.task_id = task_info["id"]
 
         microapp = self.task_name.split(".")[1]
         fields = {"Project": self.PROJECT_NAME, "Name": self.task_name, "Microapp": microapp, "Env": [env_id]}
         if self.task_id:
-            task_record = self.TABLE_TASKS.update(self.task_id, fields=fields)
+            task_record = self.get_airtable("tasks").update(self.task_id, fields=fields)
         else:
-            task_record = self.TABLE_TASKS.create(fields=fields)
+            task_record = self.get_airtable("tasks").create(fields=fields)
 
         self.task_id = task_record["id"]
 
@@ -55,7 +55,7 @@ class AirtableStorage(CronStorage):
         """Record in the DB that the crontask has started."""
         kwargs = self.task.kwargs
         strategy: Optional[FetchStrategy] = kwargs.get("strategy")
-        run = self.TABLE_RUNS.create(
+        run = self.get_airtable("runs").create(
             fields={
                 "Task": [self.task_id],
                 "Status": "Running",
@@ -69,7 +69,7 @@ class AirtableStorage(CronStorage):
 
     async def record_run_end(self, response: CronResponse) -> None:
         """Record in the DB that the crontask has ended."""
-        self.TABLE_RUNS.update(
+        self.get_airtable("runs").update(
             self.run_id,
             fields={
                 "Response": json.dumps(response),
@@ -80,5 +80,6 @@ class AirtableStorage(CronStorage):
 
     async def record_stats(self, stats: list[CronStat]) -> None:
         """Record un the DB stats about data to process by this cron."""
+        table = self.get_airtable("stats")
         for stat in stats:
-            self.TABLE_STATS.create(fields={"Task": [self.task_id], "Key": stat.name, "Value": stat.value})
+            table.create(fields={"Task": [self.task_id], "Key": stat.name, "Value": stat.value})
