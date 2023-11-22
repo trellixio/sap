@@ -6,7 +6,9 @@ It exposes the ASGI callable as a module-level variable named ``app``.
 
 """
 import logging
+import typing
 
+from beanie.odm.views import View
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
@@ -14,6 +16,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
 
 from AppMain.settings import AppSettings
+from sap.beanie import Document
 from sap.beanie.client import BeanieClient
 from sap.fastapi.middleware import InitBeanieMiddleware
 from sap.loggers import logger
@@ -21,7 +24,7 @@ from sap.loggers import logger
 # Initialize application
 app = FastAPI(docs_url=None, redoc_url=None, routes=[])
 
-document_models = []
+document_models: list[typing.Union[type[Document], type[View], str]] = []
 
 # Register middleware
 app.add_middleware(InitBeanieMiddleware, mongo_params=AppSettings.MONGO, document_models=document_models)

@@ -47,7 +47,7 @@ class LambdaTask(celery.Task):
 
     def run(self, *args: Any, **kwargs: Any) -> Any:
         """Run the task."""
-        logger.debug(f"Running task={self.get_name()} {args=} {kwargs=}")
+        logger.debug("Running task=%s args=%s kwargs=%s", self.get_name(), str(args), str(kwargs))
         return asyncio.run(self.handle_process(*args, **kwargs))
 
 
@@ -112,7 +112,9 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
         headers = message.headers
         is_retry = headers and headers.get("x-death")
         if is_retry:
-            logger.debug(f"Consuming worker name={self.name} topic={topic} body={body} headers={headers}")
+            logger.debug(
+                "Consuming worker name=%s topic=%s body=%s headers=%s", self.name, topic, str(body), str(headers)
+            )
         try:
             self._propagate_signal(body, message)
         except Exception as exc:  # pylint: disable=broad-except
