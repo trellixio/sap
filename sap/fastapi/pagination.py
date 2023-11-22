@@ -30,7 +30,7 @@ class CursorInfo:
 
     def __init__(self, request: Request) -> None:
         """Initialize the cursor info."""
-        self.limit = request.query_params.get("limit", self.limit)
+        self.limit = int(request.query_params.get("limit", self.limit))
         cursor_str = request.query_params.get("cursor", "")
         try:
             limit, offset = utils.base64_url_decode(cursor_str).split(",")
