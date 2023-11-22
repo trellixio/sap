@@ -50,8 +50,8 @@ async def prefetch_related(item_list: list[DocT], to_attribute: str) -> None:
     link_fields = type(item_list[0]).get_link_fields()
     assert link_fields
     related_field: LinkInfo = link_fields[to_attribute]
-    assert issubclass(related_field.model_class, Document)
-    related_model: Type[Document] = related_field.model_class
+    assert issubclass(related_field.document_class, Document)
+    related_model: Type[Document] = related_field.document_class
 
     def get_related_id(item_: Document) -> Optional[PydanticObjectId]:
         """Return the id of the related object."""

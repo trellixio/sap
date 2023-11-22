@@ -7,24 +7,40 @@ from . import utils
 
 PageDataT = TypeVar("PageDataT")
 
+class BeanieQueryParams(TypedDict):
+    """Attribute of beanie query params"""
+
+    limit: int
+    skip: int
+    sort: str
+
 
 class CursorInfo:
-    """Contains information on how the list should paginated."""
+    """
+    Contains information on how the list should paginated.
+    
+    This is a fake cursor paginator.
+    """
 
     offset: int = 0
     limit: int = 10
+    limit_max: int = 250
     sort: str = "-doc_meta.created"
 
     def __init__(self, request: Request) -> None:
         """Initialize the cursor info."""
+        self.limit = request.query_params.get("limit", self.limit)
         cursor_str = request.query_params.get("cursor", "")
         try:
             limit, offset = utils.base64_url_decode(cursor_str).split(",")
         except ValueError:
-            return
-        self.limit, self.offset = int(limit), int(offset)
+            pass
+        else:
+            self.limit, self.offset = int(limit), int(offset)
 
-    def get_beanie_query_params(self) -> dict[str, Union[int, str]]:
+        self.limit = min(self.limit, self.limit_max)
+
+    def get_beanie_query_params(self) -> BeanieQueryParams:
         """Return params to apply to the database query when using beanie."""
         return {
             "limit": self.limit,

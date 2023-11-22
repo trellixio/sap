@@ -119,6 +119,10 @@ class Document(beanie.Document):
         if not result:
             raise Object404Error
         return result
+    
+    async def fetch(self) -> "Document":
+        """Simulate the fetch method available on Link class"""
+        return self
 
 
 DocT = TypeVar("DocT", bound=Document)

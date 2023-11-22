@@ -33,7 +33,7 @@ class Link(beanie.Link[DocT]):
 
     # id: beanie.PydanticObjectId
     ref: DBRef
-    model_class: Type[DocT]
+    document_class: Type[DocT]
     doc: Optional[DocT]  # This is the prefetched T document
 
     def __init__(self, ref: DBRef, document_class: Type[DocT]) -> None:
