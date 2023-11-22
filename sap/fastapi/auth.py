@@ -10,10 +10,11 @@ import typing
 
 import jwt
 
-from fastapi import Cookie, Depends, Request, Response
+from fastapi import Request, Response
 from fastapi.exceptions import HTTPException
-from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
-from starlette.requests import HTTPConnection
+
+# from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
+# from starlette.requests import HTTPConnection
 from starlette.status import HTTP_307_TEMPORARY_REDIRECT as HTTP_307
 from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401
 
@@ -100,25 +101,26 @@ class JWTAuth:
             raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url(request)}) from exc
 
 
-class JWTAuthBackend(AuthenticationBackend, JWTAuth):
-    """Starlette Backend to authenticate use through JWT Token in Cookies."""
+# class JWTAuthBackend(AuthenticationBackend, JWTAuth):
+#     """Starlette Backend to authenticate use through JWT Token in Cookies."""
 
-    async def authenticate(self, conn: HTTPConnection) -> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
-        """Authenticate the user using Cookies."""
-        cookie_key: str = self.get_auth_cookie_key(request=conn)
-        if cookie_key not in conn.cookies:
-            return None
+#     async def authenticate(self, request: HTTPConnection) -> UserT:
+#         """Authenticate the user using Cookies."""
+#         cookie_key: str = self.get_auth_cookie_key(request=request)
+#         if cookie_key not in request.cookies:
+#             raise AuthenticationError("Unable to find JWT cookie")
 
-        jwt_cookie = conn.cookies[cookie_key]
+#         jwt_cookie = request.cookies[cookie_key]
 
-        try:
-            jwt_data = jwt.decode(jwt_cookie, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
-        except jwt.exceptions.InvalidTokenError as exc:
-            raise AuthenticationError("Invalid JWT token") from exc
+#         try:
+#             jwt_data = jwt.decode(jwt_cookie, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
+#         except jwt.exceptions.InvalidTokenError as exc:
+#             raise AuthenticationError("Invalid JWT token") from exc
 
-        user = await self.user_model.get_or_404(jwt_data["user_id"])
+#         user = await self.user_model.get_or_404(jwt_data["user_id"])
 
-        return AuthCredentials([user.get_scopes()]), user
+#         return user
+#         # return AuthCredentials([user.get_scopes()]), user
 
 
 class BasicAuth:
@@ -146,7 +148,7 @@ class BasicAuth:
     async def authenticate(self, request: Request) -> UserT:
         """Provide the authenticated user to views that require it."""
 
-        header_auth: str = request.headers.get("Authorization")
+        header_auth: typing.Optional[str] = request.headers.get("Authorization")
         if not header_auth:
             raise HTTPException(HTTP_401, detail="Authentication required")
 
@@ -170,7 +172,6 @@ class BasicAuth:
         try:
             if auth_key:
                 return await self.user_model.find_one_or_404(auth_key == user_key)
-            else:
-                return await self.user_model.get_or_404(user_key)
+            return await self.user_model.get_or_404(user_key)
         except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
             raise HTTPException(HTTP_401, detail="Invalid basic auth credentials") from exc

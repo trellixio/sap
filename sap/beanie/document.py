@@ -59,7 +59,7 @@ class Document(beanie.Document):
 
     doc_meta: _DocMeta = _DocMeta()
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
     @pydantic.root_validator
@@ -119,7 +119,7 @@ class Document(beanie.Document):
         if not result:
             raise Object404Error
         return result
-    
+
     async def fetch(self) -> "Document":
         """Simulate the fetch method available on Link class"""
         return self

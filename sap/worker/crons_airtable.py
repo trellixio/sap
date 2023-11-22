@@ -51,7 +51,7 @@ class AirtableStorage(CronStorage):
 
         self.task_id = task_record["id"]
 
-    async def record_run_start(self, retry=0) -> None:
+    async def record_run_start(self) -> None:
         """Record in the DB that the crontask has started."""
         kwargs = self.task.kwargs
         strategy: Optional[FetchStrategy] = kwargs.get("strategy")

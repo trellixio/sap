@@ -39,14 +39,16 @@ class DebugTask:
         # traceback.print_stack()
         # raise Exception('Yo')
 
-        logger.warn(
-            f"Running Start self.name={self.name} proc.pid={os.getpid()} args={args} kwargs={kwargs} time_now={time_now}"
+        logger.warning(
+            "Running Start self.name=%s proc.pid=%d args=%s kwargs=%s time_now=%s",
+            self.name, os.getpid(), str(args), str(kwargs), str(time_now)
         )
 
         time.sleep(30)
 
-        logger.warn(
-            f"Running End self.name={self.name} proc.pid={os.getpid()} args={args} kwargs={kwargs} time_now={time_now}"
+        logger.warning(
+            "Running End self.name=%s proc.pid=%d args=%s kwargs=%s time_now=%s",
+            self.name, os.getpid(), str(args), str(kwargs), str(time_now)
         )
         # raise Exception("I am tired.!")
 

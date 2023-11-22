@@ -1,4 +1,4 @@
-from typing import Any, Generic, Optional, TypedDict, TypeVar, Union
+from typing import Any, Generic, Optional, TypedDict, TypeVar
 
 from fastapi import Request
 from pydantic import BaseModel
@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from . import utils
 
 PageDataT = TypeVar("PageDataT")
+
 
 class BeanieQueryParams(TypedDict):
     """Attribute of beanie query params"""
@@ -18,7 +19,7 @@ class BeanieQueryParams(TypedDict):
 class CursorInfo:
     """
     Contains information on how the list should paginated.
-    
+
     This is a fake cursor paginator.
     """
 

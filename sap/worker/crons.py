@@ -124,7 +124,7 @@ class BaseCronTask(celery.Task):
 
     def run(self, *args: Any, **kwargs: Any) -> Any:
         """Run the task."""
-        logger.debug(f"Running task={self.get_name()} {args=} {kwargs=}")
+        logger.debug("Running task=%s args=%s kwargs=%s", self.get_name(), str(args), str(kwargs))
         return asyncio.run(self.handle_process(*args, **kwargs))
 
 

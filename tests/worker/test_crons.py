@@ -29,7 +29,7 @@ class DummyAirtableStorage(AirtableStorage):
         """Return env name and env id on airtable"""
         return "TEST", "rec8deejyHcQzGVda"
 
-    def get_airtable(table_name: str = "") -> Table:
+    def get_airtable(self, table_name: str = "") -> Table:
         """Return instance of the table to use give the table_name."""
         if table_name == "tasks":
             return Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Tasks")
