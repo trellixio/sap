@@ -120,8 +120,9 @@ class BeansClient(RestClient):
 
     base_url: str = "https://api.trybeans.com/v3/"
 
-    def __init__(self, access_token: str) -> None:
+    def __init__(self, access_token: typing.Optional[str]) -> None:
         """Initialize the API client."""
+        assert access_token
         super().__init__(basic_username=access_token)
 
     @classmethod

@@ -109,7 +109,7 @@ class WriteObjectSerializer(Generic[DocT], BaseModel):
 
     instance: Optional[DocT] = None
 
-    async def run_async_validators(self) -> None:
+    async def run_async_validators(self, **kwargs: Any) -> None:
         """Check that data pass DB validation."""
 
         field: ModelField
@@ -123,7 +123,7 @@ class WriteObjectSerializer(Generic[DocT], BaseModel):
             if field_serializer := getattr(self, field_name):
                 if self.instance:
                     field_serializer.instance = getattr(self.instance, field_name)
-                await field_serializer.run_async_validators()
+                await field_serializer.run_async_validators(**kwargs)
 
     def dict(
         self,

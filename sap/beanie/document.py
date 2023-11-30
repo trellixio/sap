@@ -124,6 +124,11 @@ class Document(beanie.Document):
         """Simulate the fetch method available on Link class"""
         return self
 
+    @property
+    def doc(self) -> "Document":
+        """Simulate the doc attribute available on Link class"""
+        return self
+
 
 DocT = TypeVar("DocT", bound=Document)
 ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
