@@ -14,6 +14,7 @@ from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
+from contextlib import asynccontextmanager
 
 from AppMain.settings import AppSettings
 from sap.beanie import Document
@@ -21,8 +22,18 @@ from sap.beanie.client import BeanieClient
 from sap.fastapi.middleware import InitBeanieMiddleware
 from sap.loggers import logger
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize beanie on startup."""
+    await initialize_beanie()
+    # await update_uvicorn_logger()
+    yield
+
+
 # Initialize application
-app = FastAPI(docs_url=None, redoc_url=None, routes=[])
+app = FastAPI(docs_url=None, redoc_url=None, routes=[], lifespan=lifespan)
+
 
 document_models: list[typing.Union[type[Document], type[View], str]] = []
 
@@ -34,7 +45,6 @@ app.add_middleware(SessionMiddleware, session_cookie="starlette", secret_key=App
 
 
 # Events to run on startups
-@app.on_event("startup")
 async def initialize_beanie() -> None:
     """Initialize beanie on startup."""
     await BeanieClient.init(mongo_params=AppSettings.MONGO, document_models=document_models)
@@ -48,7 +58,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return await request_validation_exception_handler(request=request, exc=exc)
 
 
-# @app.on_event("startup")
 async def update_uvicorn_logger() -> None:
     """Log all uvicorn errors."""
     logger_uvicorn = logging.getLogger("uvicorn.access")
