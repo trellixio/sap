@@ -8,6 +8,7 @@ from typing import Any, Callable, ClassVar, Optional
 import celery.schedules
 import pytest
 from pyairtable.api.table import Table
+from pyairtable.api.api import Api
 
 from beanie.odm.queries.find import FindMany
 
@@ -31,12 +32,13 @@ class DummyAirtableStorage(AirtableStorage):
 
     def get_airtable(self, table_name: str = "") -> Table:
         """Return instance of the table to use give the table_name."""
+        api: Api = Api(AppSettings.AIRTABLE_TOKEN)
         if table_name == "tasks":
-            return Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Tasks")
+            return api.table(AIRTABLE_APP, "Tasks")
         if table_name == "runs":
-            return Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Runs")
+            return api.table(AIRTABLE_APP, "Runs")
         if table_name == "stats":
-            return Table(AppSettings.AIRTABLE_TOKEN, AIRTABLE_APP, "Stats")
+            return api.table(AIRTABLE_APP, "Stats")
         raise NotImplementedError
 
 

@@ -6,6 +6,7 @@ Use this wrapper to perform API requests with a REST app.
 
 Learn more about REST: https://en.wikipedia.org/wiki/Representational_state_transfer
 """
+from __future__ import annotations
 
 import typing
 import urllib.parse
@@ -120,9 +121,9 @@ class BeansClient(RestClient):
 
     base_url: str = "https://api.trybeans.com/v3/"
 
-    def __init__(self, access_token: typing.Optional[str]) -> None:
+    def __init__(self, access_token: str | None) -> None:
         """Initialize the API client."""
-        assert access_token
+        assert access_token is not None
         super().__init__(basic_username=access_token)
 
     @classmethod

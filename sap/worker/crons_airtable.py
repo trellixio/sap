@@ -13,6 +13,7 @@ import pyairtable.api
 import pyairtable.formulas as pyOps
 import pyairtable.utils
 from pyairtable.api.table import Table
+from pyairtable.api.types import WritableFields
 
 from .crons import CronResponse, CronStat, CronStorage, FetchStrategy
 
@@ -38,12 +39,12 @@ class AirtableStorage(CronStorage):
         env_name, env_id = self.get_env_params()
 
         query = {"Env": env_name, "Name": self.task_name}
-        task_info = self.get_airtable("tasks").first(formula=pyOps.match(query), fields=["Name", "Env"])  # type: ignore
+        task_info = self.get_airtable("tasks").first(formula=pyOps.match(query), fields=["Name", "Env"])
         if task_info:
             self.task_id = task_info["id"]
 
         microapp = self.task_name.split(".")[1]
-        fields = {"Project": self.PROJECT_NAME, "Name": self.task_name, "Microapp": microapp, "Env": [env_id]}
+        fields: WritableFields = {"Project": self.PROJECT_NAME, "Name": self.task_name, "Microapp": microapp, "Env": [env_id]}
         if self.task_id:
             task_record = self.get_airtable("tasks").update(self.task_id, fields=fields)
         else:
@@ -53,6 +54,7 @@ class AirtableStorage(CronStorage):
 
     async def record_run_start(self) -> None:
         """Record in the DB that the crontask has started."""
+        assert self.task_id
         kwargs = self.task.kwargs
         strategy: Optional[FetchStrategy] = kwargs.get("strategy")
         run = self.get_airtable("runs").create(
@@ -80,6 +82,7 @@ class AirtableStorage(CronStorage):
 
     async def record_stats(self, stats: list[CronStat]) -> None:
         """Record un the DB stats about data to process by this cron."""
+        assert self.task_id
         table = self.get_airtable("stats")
         for stat in stats:
             table.create(fields={"Task": [self.task_id], "Key": stat.name, "Value": stat.value})
