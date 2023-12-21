@@ -62,7 +62,7 @@ class CursorInfo:
         return utils.base64_url_encode(f"{self.limit},{offset}")
 
 
-class PaginatedData(Generic[PageDataT], BaseModel):
+class PaginatedData(BaseModel, Generic[PageDataT]):
     """Represent the structure of an API paginated list response."""
 
     object: str = "list"

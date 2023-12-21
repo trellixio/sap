@@ -20,7 +20,7 @@ class StatSerializer(pydantic.BaseModel):
     percent: typing.Optional[Decimal] = None
     view: typing.Optional[str] = None  # URL the to the page to view the data with filter query
 
-    @pydantic.root_validator
+    @pydantic.model_validator(mode="before")
     @classmethod
     def set_percent(cls, values: dict[str, typing.Any]) -> dict[str, typing.Any]:
         """Calculate the percentage."""

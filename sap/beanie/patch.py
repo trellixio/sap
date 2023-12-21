@@ -7,7 +7,6 @@ from beanie.odm.fields import LinkInfo, LinkTypes
 from beanie.odm.registry import DocsRegistry
 from beanie.odm.utils.init import Initializer as Initializer
 from pydantic.fields import FieldInfo
-from pydantic.typing import get_origin
 
 from .link import Link as MLink
 

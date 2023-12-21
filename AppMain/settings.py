@@ -22,6 +22,7 @@ import os
 import pathlib
 
 import pydantic
+import pydantic_settings
 
 from sap.settings import DatabaseParams, IntegrationParams
 
@@ -37,7 +38,7 @@ class TestcasesParams(pydantic.BaseModel):
     beans_access_token: str = ""
 
 
-class _Settings(pydantic.BaseSettings):
+class _Settings(pydantic_settings.BaseSettings):
     """
     Application Settings.
 
@@ -47,6 +48,13 @@ class _Settings(pydantic.BaseSettings):
     All env variable should be prefixed with APP_SETTINGS_
     For example to set the LOG_DIR, use: APP_SETTINGS_LOG_DIR="/tmp/"
     """
+
+    model_config = pydantic_settings.SettingsConfigDict(
+        env_file=os.getenv("APP_DOTENV", ".env"),
+        env_file_encoding="utf-8",
+        env_prefix="APP_SETTINGS_",
+        env_nested_delimiter="__",
+    )
 
     # Envs
     APP_ENV: str = os.getenv("APP_ENV", "DEV")
@@ -66,10 +74,5 @@ class _Settings(pydantic.BaseSettings):
     TESTCASES: TestcasesParams = TestcasesParams()
     TOKENIFY: IntegrationParams
 
-    class Config:
-        env_nested_delimiter = "__"
-        env_prefix = "APP_SETTINGS_"
-        env_file = os.getenv("APP_DOTENV", ".env")
 
-
-AppSettings = _Settings()  # type: ignore
+AppSettings = _Settings()

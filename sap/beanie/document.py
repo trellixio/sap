@@ -39,19 +39,17 @@ class _DocMeta(pydantic.BaseModel):
     deleted: Optional[datetime] = None  # when the document was deleted, (deleted document may be retained for logging)
 
 
-class DocMeta(pydantic.BaseModel):
-    """Manage meta data and ensure that it's correctly set."""
+# class DocMeta(pydantic.BaseModel):
+#     """Manage meta data and ensure that it's correctly set."""
 
-    doc_meta: _DocMeta = _DocMeta()
+#     doc_meta: _DocMeta = _DocMeta()
 
-    @pydantic.root_validator
-    @classmethod
-    def validate_doc_meta(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Validate doc meta on each model update."""
-        doc_meta: _DocMeta = values["doc_meta"]
-        doc_meta.updated = datetime.utcnow()
-        doc_meta.created = doc_meta.created or doc_meta.updated
-        return values
+#     @pydantic.model_validator(mode='after')
+#     def validate_doc_meta(self) -> 'DocMeta':
+#         """Validate doc meta on each model update."""
+#         self.doc_meta.updated = datetime.utcnow()
+#         self.doc_meta.created = self.doc_meta.created or self.doc_meta.updated
+#         return self
 
 
 class Document(beanie.Document):
@@ -62,14 +60,12 @@ class Document(beanie.Document):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-    @pydantic.root_validator
-    @classmethod
-    def validate_doc_meta(cls, values: dict[str, Any]) -> dict[str, Any]:
+    @pydantic.model_validator(mode='after')
+    def validate_doc_meta(self) -> 'Document':
         """Validate doc meta on each model update."""
-        doc_meta: _DocMeta = values["doc_meta"]
-        doc_meta.updated = datetime.utcnow()
-        doc_meta.created = doc_meta.created or doc_meta.updated
-        return values
+        self.doc_meta.updated = datetime.utcnow()
+        self.doc_meta.created = self.doc_meta.created or self.doc_meta.updated
+        return self
 
     @classmethod
     async def get_or_404(
