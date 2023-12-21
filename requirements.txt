@@ -10,3 +10,6 @@ pip==23.0.1
 
 # Install all dependencies in setup.py
 -e .
+
+# Optional dependencies
+pyairtable~=2.2
