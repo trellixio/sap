@@ -133,7 +133,7 @@ class BasicAuth:
     user_model: type[Document]
     auth_key_attribute: typing.ClassVar[str] = "auth_key"
 
-    def __init__(self, user_model: type[UserT]) -> None:
+    def __init__(self, user_model: typing.Optional[type[UserT]]=None) -> None:
         """Initialize the auth helper.
 
         :param user_model: The User model class.
@@ -144,6 +144,15 @@ class BasicAuth:
     def get_auth_key_attribute(self) -> typing.Optional[str]:
         """Retrieve name of the `auth_key` attribute use to verify user."""
         return self.auth_key_attribute
+
+    async def retrieve_user(self, user_key: str) -> UserT:
+        """Retrieve a user using authorization key"""
+
+        if auth_key_name := self.get_auth_key_attribute():
+            auth_key = getattr(self.user_model, auth_key_name)
+            return await self.user_model.find_one_or_404(auth_key == user_key)
+
+        return await self.user_model.get_or_404(user_key)
 
     async def authenticate(self, request: Request) -> UserT:
         """Provide the authenticated user to views that require it."""
@@ -164,14 +173,7 @@ class BasicAuth:
         username, _, pwd = decoded.partition(":")
         user_key = username or pwd
 
-        if auth_key_name := self.get_auth_key_attribute():
-            auth_key = getattr(self.user_model, auth_key_name)
-        else:
-            auth_key = None
-
         try:
-            if auth_key:
-                return await self.user_model.find_one_or_404(auth_key == user_key)
-            return await self.user_model.get_or_404(user_key)
+            return await self.retrieve_user(user_key)
         except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
             raise HTTPException(HTTP_401, detail="Invalid basic auth credentials") from exc

@@ -10,7 +10,7 @@ long_description = (this_directory / "README.md").read_text()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-VERSION = "0.1.27"
+VERSION = "0.2.0"
 
 setup(
     name="sapx",
@@ -27,18 +27,18 @@ setup(
     python_requires=">=3.9",
     install_requires=[
         "aioamqp~=0.15",
-        "httpx~=0.23",
-        "redis~=4.5",
-        "celery~=5.2",
-        "pydantic~=1.10",
-        "PyJWT~=2.6",
-        "fastAPI~=0.89",
+        "httpx~=0.26",
+        "redis~=5.0",
+        "celery~=5.3",
+        "pydantic~=2.5",
+        "PyJWT~=2.8",
+        "fastAPI~=0.105",
         "itsdangerous~=2.1",
         "beanie~=1.23",
         "passlib~=1.7",
-        "motor~=3.1",
+        "motor~=3.3",
         "sqlmodel~=0.0",
-        "typing-extensions~=4.5",
+        "typing-extensions~=4.9",
         "PyYAML~=6.0",
     ],
     classifiers=[
