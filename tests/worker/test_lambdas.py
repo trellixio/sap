@@ -49,16 +49,19 @@ class DummyLambdaWorker(LambdaWorker):
         return [register_lambda(DummyLambdaTask)]
 
 
-@pytest.fixture
-def setup_celery_app(celery_app: celery.Celery) -> None:
+@pytest.fixture(name="setup_celery_app")
+def fixture_setup_celery_app(celery_app: celery.Celery) -> bool:
     """Setting up Celery worker"""
     celery_app.register_task(register_lambda(DummyLambdaTask))
     celery_app.steps["consumer"].add(DummyLambdaWorker)
+    return True
 
 
 @pytest.mark.asyncio
-async def test_lambda_worker(setup_celery_app: None, celery_worker: celery.worker.WorkController) -> None:
+async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worker.WorkController) -> None:
     """Create dummy lambda worker to ensure that LambdaWorker class is functioning."""
+    assert setup_celery_app and celery_worker
+
     identifier = "card_12345"
     timestamp = int(time.time())
 

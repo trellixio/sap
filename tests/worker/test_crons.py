@@ -7,8 +7,8 @@ from typing import Any, Callable, ClassVar, Optional
 
 import celery.schedules
 import pytest
-from pyairtable.api.table import Table
 from pyairtable.api.api import Api
+from pyairtable.api.table import Table
 
 from beanie.odm.queries.find import FindMany
 

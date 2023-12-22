@@ -6,7 +6,7 @@
 # For convenience dev dependencies are in the file: requirements-dev.txt
 
 # Package installer
-pip==23.0.1
+pip==23.3.2
 
 # Install all dependencies in setup.py
 -e .

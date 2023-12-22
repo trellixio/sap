@@ -31,10 +31,11 @@ celery-types~=0.18
 motor-stubs~=1.7
 types-setuptools~=67.6
 types-passlib~=1.7
+types-requests~=2.31
 
 # Testing
 pytest~=7.4
-pytest-asyncio~=0.23
+pytest-asyncio~=0.21.0
 coverage~=7.3
 pytest-cov~=4.1
 async-asgi-testclient~=1.4

@@ -1,5 +1,3 @@
-# pylint: disable=too-few-public-methods
-
 """
 Application Settings.
 
@@ -21,8 +19,9 @@ https://github.com/theskumar/python-dotenv
 import os
 import pathlib
 
-import pydantic
 import pydantic_settings
+
+import pydantic
 
 from sap.settings import DatabaseParams, IntegrationParams
 

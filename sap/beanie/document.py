@@ -60,8 +60,8 @@ class Document(beanie.Document):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-    @pydantic.model_validator(mode='after')
-    def validate_doc_meta(self) -> 'Document':
+    @pydantic.model_validator(mode="after")
+    def validate_doc_meta(self) -> "Document":
         """Validate doc meta on each model update."""
         self.doc_meta.updated = datetime.utcnow()
         self.doc_meta.created = self.doc_meta.created or self.doc_meta.updated
@@ -101,9 +101,9 @@ class Document(beanie.Document):
         fetch_links: bool = False,
         with_children: bool = False,
         **pymongo_kwargs: Any,
-    ) -> "DocType":
+    ) -> Union["DocumentProjectionType", "DocType"]:
         """Find document from query or raise 404 error if document does not exist."""
-        result: Optional["DocType"] = await super().find_one(
+        result = await super().find_one(
             *args,
             projection_model=projection_model,
             session=session,
@@ -117,12 +117,12 @@ class Document(beanie.Document):
         return result
 
     async def fetch(self) -> "Document":
-        """Simulate the fetch method available on Link class"""
+        """Simulate the fetch method available on Link class."""
         return self
 
     @property
     def doc(self) -> "Document":
-        """Simulate the doc attribute available on Link class"""
+        """Simulate the doc attribute available on Link class."""
         return self
 
 

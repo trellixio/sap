@@ -3,6 +3,9 @@ Lambdas refers to async background tasks.
 
 They run code in response to events which are typically messages sent to a queue.
 """
+
+# mypy: disable-error-code="import-untyped"
+
 import asyncio
 from typing import Any
 
@@ -18,7 +21,7 @@ from .packet import SignalPacket
 from .utils import match_amqp_topics
 
 
-class LambdaTask(celery.Task):
+class LambdaTask(celery.Task):  # type: ignore[misc]
     """
     A lambda task is a task that run on a specific event, usually after receiving a packet (message).
 
@@ -56,7 +59,7 @@ def register_lambda(lambda_task_class: type[LambdaTask]) -> LambdaTask:
     return lambda_task_class()
 
 
-class LambdaWorker(celery.bootsteps.ConsumerStep):
+class LambdaWorker(celery.bootsteps.ConsumerStep):  # type: ignore[misc]
     """Celery worker that consumes packets (messages) sent to lambda queues."""
 
     packets: list[SignalPacket]

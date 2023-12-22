@@ -9,7 +9,7 @@ import string
 
 
 def generate_random_string(length: int) -> str:
-    """Generate a random string of a given length"""
+    """Generate a random string of a given length."""
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 

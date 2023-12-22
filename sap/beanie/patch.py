@@ -1,5 +1,5 @@
+"""Patch used for overload Beanie."""
 # mypy: ignore-errors
-# pylint: skip-file
 
 from typing import Any, List, Optional, Union, get_args, get_origin
 
@@ -15,9 +15,10 @@ original__detect_link = Initializer.detect_link
 
 def detect_link(self, field: FieldInfo, field_name: str) -> Optional[LinkInfo]:
     """
-    It detects link and returns LinkInfo if any found.
+    Detect link and returns LinkInfo if any found.
 
-    :param field: ModelField
+    :param field: FieldInfo
+    :param field_name: str
     :return: Optional[LinkInfo]
     """
     origin = get_origin(field.annotation)

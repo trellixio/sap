@@ -96,6 +96,11 @@ warn_untyped_fields = true
 module = [
     "motor",
     "uvicorn",
+    "celery",
+    "celery.bootsteps",
+    "celery.worker",
+    "celery.schedules",
+    "kombu.pidbox",
     "aioamqp",
     "aioamqp.channel",
     "aioamqp.exceptions",

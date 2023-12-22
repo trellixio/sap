@@ -3,6 +3,8 @@ Utils.
 
 Utilities methods to manage worker tasks.
 """
+# mypy: disable-error-code="import-untyped"
+
 import typing
 
 import celery
@@ -84,7 +86,7 @@ def register_tasks_with_celery_beat(
     return beat_schedule
 
 
-@Panel.register(
+@Panel.register(  # type: ignore[misc]
     type="inspect",
     alias="dump_conf",
     signature="[include_defaults=False]",

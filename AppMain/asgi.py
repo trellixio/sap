@@ -7,6 +7,7 @@ It exposes the ASGI callable as a module-level variable named ``app``.
 """
 import logging
 import typing
+from contextlib import asynccontextmanager
 
 from beanie.odm.views import View
 from fastapi import FastAPI, Request
@@ -14,7 +15,6 @@ from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
-from contextlib import asynccontextmanager
 
 from AppMain.settings import AppSettings
 from sap.beanie import Document
@@ -24,8 +24,9 @@ from sap.loggers import logger
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(current_app: FastAPI) -> typing.AsyncGenerator[None, None]:
     """Initialize beanie on startup."""
+    assert current_app
     await initialize_beanie()
     # await update_uvicorn_logger()
     yield

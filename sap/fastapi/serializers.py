@@ -6,14 +6,15 @@ Handle data validation.
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, Union, get_args, get_origin, List
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, TypeVar, get_args, get_origin
+
 from typing_extensions import Literal
 
 from fastapi import Request
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 
-from sap.beanie.document import DocT, Document
+from sap.beanie.document import DocT, Document, ModelT
 
 from .pagination import CursorInfo, PaginatedData
 
@@ -21,32 +22,40 @@ if TYPE_CHECKING:
     from pydantic.main import IncEx
 
 
-class ObjectSerializer(BaseModel, Generic[DocT]):
+class ObjectSerializer(BaseModel, Generic[ModelT]):
     """Serialize an object for retrieve or list."""
 
     @classmethod
-    def get_id(cls, instance: DocT) -> str:
+    def get_id(cls, instance: ModelT) -> str:
         """Return the Mongo ID of the object."""
-        return str(instance.id)
+        if isinstance(instance, Document):
+            return str(instance.id)
+
+        raise NotImplementedError
 
     @classmethod
-    def get_created(cls, instance: DocT) -> datetime.datetime:
+    def get_created(cls, instance: ModelT) -> datetime.datetime:
         """Return the user creation date."""
-        assert instance.doc_meta.created  # let mypy know that this cannot be null
-        return instance.doc_meta.created
+        if isinstance(instance, Document):
+            assert instance.doc_meta.created  # let mypy know that this cannot be null
+            return instance.doc_meta.created
+
+        raise NotImplementedError
 
     @classmethod
-    def get_updated(cls, instance: DocT) -> datetime.datetime:
+    def get_updated(cls, instance: ModelT) -> datetime.datetime:
         """Return the user creation date."""
-        assert instance.doc_meta.updated  # let mypy know that this cannot be null
-        return instance.doc_meta.updated
+        if isinstance(instance, Document):
+            assert instance.doc_meta.updated  # let mypy know that this cannot be null
+            return instance.doc_meta.updated
+        raise NotImplementedError
 
     @classmethod
-    def _get_instance_data(cls, instance: DocT, exclude: Optional["IncEx"] = None) -> dict[str, Any]:
+    def _get_instance_data(cls, instance: ModelT, exclude: Optional["IncEx"] = None) -> dict[str, Any]:
         """Retrieve the serializer value from the instance and getters."""
 
         def _get_field_value(field_name: str, field_info: FieldInfo) -> Any:
-            """Retrieve the value of a serialized field"""
+            """Retrieve the value of a serialized field."""
 
             # A: An explicit method was declared to retrieve the value
             if hasattr(cls, f"get_{field_name}"):
@@ -58,9 +67,7 @@ class ObjectSerializer(BaseModel, Generic[DocT]):
 
             # B. The field is an embedded serializer
             if issubclass(field_info.annotation, ObjectSerializer):
-                return (
-                    field_info.annotation.read(related_object, exclude=field_info.exclude) if related_object else None
-                )
+                return field_info.annotation.read(related_object, exclude=exclude) if related_object else None
 
             origin = get_origin(field_info.annotation)
             args = get_args(field_info.annotation)
@@ -80,13 +87,13 @@ class ObjectSerializer(BaseModel, Generic[DocT]):
         return data
 
     @classmethod
-    def read(cls: type["SerializerT"], instance: DocT, exclude: Optional["IncEx"] = None) -> "SerializerT":
+    def read(cls: type["SerializerT"], instance: ModelT, exclude: Optional["IncEx"] = None) -> "SerializerT":
         """Serialize a single object instance."""
         return cls(**cls._get_instance_data(instance, exclude=exclude))
 
     @classmethod
     def read_list(
-        cls: type["SerializerT"], instance_list: list[DocT], exclude: Optional["IncEx"] = None
+        cls: type["SerializerT"], instance_list: list[ModelT], exclude: Optional["IncEx"] = None
     ) -> list["SerializerT"]:
         """Serialize a list of objects."""
         return [cls.read(instance, exclude=exclude) for instance in instance_list]
@@ -94,7 +101,7 @@ class ObjectSerializer(BaseModel, Generic[DocT]):
     @classmethod
     def read_page(
         cls,
-        instance_list: list[DocT],
+        instance_list: list[ModelT],
         cursor_info: CursorInfo,
         request: Request,
     ) -> PaginatedData["SerializerT"]:
@@ -119,17 +126,21 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
     """Serialize an object for create or update."""
 
     instance: Optional[DocT] = None
+    embedded_serializers: ClassVar[dict[str, type["WriteObjectSerializer[Any]"]]] = {}
+
+    def __init__(self, **data: Any) -> None:
+        """Override init to filter embedded serializers."""
+        super().__init__(**data)
+        for field_name, field_info in self.model_fields.items():
+            if field_info.annotation and issubclass(field_info.annotation, WriteObjectSerializer):
+                self.embedded_serializers[field_name] = field_info.annotation
 
     async def run_async_validators(self, **kwargs: Any) -> None:
         """Check that data pass DB validation."""
 
-        embedded_serializers = {}
-        for field_name, field_info in self.model_fields.items():
-            if field_info.annotation and issubclass(field_info.annotation, WriteObjectSerializer):
-                embedded_serializers[field_name] = field_info
-
+        # Automatically run async validators on embedded serializers
         field_serializer: WriteObjectSerializer[DocT]
-        for field_name in embedded_serializers:
+        for field_name in self.embedded_serializers:
             if field_serializer := getattr(self, field_name):
                 if self.instance:
                     field_serializer.instance = getattr(self.instance, field_name)
@@ -150,44 +161,22 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
     ) -> dict[str, Any]:
         """Dump the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
-        exclude_: dict[Union[int, str], bool] = {"instance": True}
-        if exclude:
-            for x in exclude:
-                exclude_[x] = True
+        assert isinstance(exclude, set) and issubclass(get_args(exclude)[0], str)
+        exclude.add("instance")
 
-        # Some fields are only excluded from being cascade dumps to dict,
-        # but their original value is still needed
-        exclude_doc_dumps = {}
-
-        # Embedded documents need to be converted to object after dumps
-        embedded_serializers = {}
+        # # Some fields are only excluded from being cascade dumps to dict,
+        # # but their original value is still needed
+        # exclude_doc_dumps = {}
 
         for field_name, field_info in self.model_fields.items():
-            if field_name in exclude_:
-                continue
-
-            if not field_info.annotation:
-                continue
-
-            if issubclass(field_info.annotation, Document):
-                exclude_doc_dumps[field_name] = True
-                exclude_[field_name] = True
-
-            elif issubclass(field_info.annotation, WriteObjectSerializer):
-                embedded_serializers[field_name] = field_info.annotation.model_fields["instance"].annotation
-
-            # # Some fields are excluded as they are only needed for create
-            # if field.field_info.extra.get("exclude_update") and self.instance:
-            #     exclude_[field_name] = True
-
-            # # Some fields are excluded as they are only needed for update
-            # elif field.field_info.extra.get("exclude_create") and not self.instance:
-            #     exclude_[field_name] = True
+            if field_info.annotation and issubclass(field_info.annotation, Document):
+                # exclude_doc_dumps[field_name] = True
+                exclude.add(field_name)
 
         result = super().model_dump(
             mode=mode,
             include=include,
-            exclude=exclude_,
+            exclude=exclude,
             by_alias=by_alias,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
@@ -196,15 +185,15 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
             warnings=warnings,
         )
 
-        for field_name in exclude_doc_dumps:
-            result[field_name] = getattr(self, field_name)
+        # for field_name in exclude_doc_dumps:
+        #     result[field_name] = getattr(self, field_name)
 
         instance_embedded: Optional[BaseModel]
-        for field_name, field_model in embedded_serializers.items():
+        for field_name, field_model in self.embedded_serializers.items():
             if not result[field_name]:
                 continue
             if instance_embedded := getattr(self.instance, field_name, None):
-                result[field_name] = instance_embedded.copy(update=result[field_name])
+                result[field_name] = instance_embedded.model_copy(update=result[field_name])
             else:
                 result[field_name] = field_model(**result[field_name])
 
@@ -212,14 +201,15 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
 
     async def create(self, **kwargs: Any) -> DocT:
         """Create the object in the database using the data extracted by the serializer."""
-        instance_class: type[DocT] = self.model_fields["instance"].annotation
+        instance_class: Optional[type[Any]] = self.model_fields["instance"].annotation
+        assert instance_class and issubclass(instance_class, Document)
         self.instance = await instance_class(**self.model_dump()).create()
         return self.instance
 
     async def update(self, **kwargs: Any) -> DocT:
         """Update the object in the database using the data extracted by the serializer."""
         assert self.instance
-        instance: DocT = self.instance.copy(update=self.dict())
+        instance: DocT = self.instance.model_copy(update=self.model_dump())
         await instance.save()
         self.instance = instance
         return instance

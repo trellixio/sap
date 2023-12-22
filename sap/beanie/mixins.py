@@ -1,3 +1,4 @@
+"""Mixin for User models."""
 import typing
 
 import passlib.context

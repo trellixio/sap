@@ -3,13 +3,17 @@ Auth.
 
 Utils to handle user authentication and permissions.
 """
+from __future__ import annotations
+
 import base64
 import binascii
 import time
-import typing
+from typing import ClassVar, TypeVar
 
 import jwt
+import typing_extensions
 
+import pydantic
 from fastapi import Request, Response
 from fastapi.exceptions import HTTPException
 
@@ -19,10 +23,11 @@ from starlette.status import HTTP_307_TEMPORARY_REDIRECT as HTTP_307
 from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401
 
 from AppMain.settings import AppSettings
-from sap.beanie import Document
+from sap.beanie.document import Document
 from sap.beanie.exceptions import Object404Error
 
-UserT = typing.TypeVar("UserT", bound=Document)
+UserT = TypeVar("UserT", bound=Document)
+UserViewT: typing_extensions.TypeAlias = "Document | pydantic.BaseModel"
 
 
 class JWTAuth:
@@ -32,9 +37,9 @@ class JWTAuth:
     Mainly useful for Web Apps. For API, it is better to use Basic Authentication in Headers.
     """
 
-    auth_login_url: typing.ClassVar[str] = "/pages/auth/login/"
-    auth_cookie_key: typing.ClassVar[str] = "user_session"
-    auth_cookie_expires: typing.ClassVar[int] = 60 * 60 * 12  # expiration = 12 hours
+    auth_login_url: ClassVar[str] = "/pages/auth/login/"
+    auth_cookie_key: ClassVar[str] = "user_session"
+    auth_cookie_expires: ClassVar[int] = 60 * 60 * 12  # expiration = 12 hours
     user_model: type[Document]
 
     def __init__(self, user_model: type[UserT]) -> None:
@@ -96,8 +101,12 @@ class JWTAuth:
         """Provide the authenticated user to views that require it."""
         try:
             jwt_token = request.cookies[self.get_auth_cookie_key(request)]
+        except KeyError as exc:
+            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url(request)}) from exc
+
+        try:
             return await self.find_user(jwt_token=jwt_token)
-        except (KeyError, Object404Error, jwt.exceptions.InvalidTokenError) as exc:
+        except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
             raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url(request)}) from exc
 
 
@@ -130,10 +139,10 @@ class BasicAuth:
     Mainly useful for API access. For web app, check JWTAuth which support persistent cookie session.
     """
 
-    user_model: type[Document]
-    auth_key_attribute: typing.ClassVar[str] = "auth_key"
+    user_model: type[UserViewT] | None
+    auth_key_attribute: ClassVar[str] = "auth_key"
 
-    def __init__(self, user_model: typing.Optional[type[UserT]]=None) -> None:
+    def __init__(self, user_model: type[UserViewT] | None = None) -> None:
         """Initialize the auth helper.
 
         :param user_model: The User model class.
@@ -141,23 +150,24 @@ class BasicAuth:
         super().__init__()
         self.user_model = user_model
 
-    def get_auth_key_attribute(self) -> typing.Optional[str]:
+    def get_auth_key_attribute(self) -> str | None:
         """Retrieve name of the `auth_key` attribute use to verify user."""
         return self.auth_key_attribute
 
-    async def retrieve_user(self, user_key: str) -> UserT:
-        """Retrieve a user using authorization key"""
+    async def retrieve_user(self, user_key: str) -> UserViewT:
+        """Retrieve a user using authorization key."""
+        if self.user_model and issubclass(self.user_model, Document):
+            if auth_key_name := self.get_auth_key_attribute():
+                auth_key = getattr(self.user_model, auth_key_name)
+                return await self.user_model.find_one_or_404(auth_key == user_key)
 
-        if auth_key_name := self.get_auth_key_attribute():
-            auth_key = getattr(self.user_model, auth_key_name)
-            return await self.user_model.find_one_or_404(auth_key == user_key)
+            return await self.user_model.get_or_404(user_key)
+        raise NotImplementedError
 
-        return await self.user_model.get_or_404(user_key)
-
-    async def authenticate(self, request: Request) -> UserT:
+    async def authenticate(self, request: Request) -> UserViewT:
         """Provide the authenticated user to views that require it."""
 
-        header_auth: typing.Optional[str] = request.headers.get("Authorization")
+        header_auth: str | None = request.headers.get("Authorization")
         if not header_auth:
             raise HTTPException(HTTP_401, detail="Authentication required")
 

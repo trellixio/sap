@@ -37,7 +37,7 @@ setup(
         "beanie~=1.23",
         "passlib~=1.7",
         "motor~=3.3",
-        "sqlmodel~=0.0",
+        # "sqlmodel~=0.0",
         "typing-extensions~=4.9",
         "PyYAML~=6.0",
     ],

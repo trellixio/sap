@@ -1,3 +1,4 @@
+"""Utils for pagination."""
 from typing import Any, Generic, Optional, TypedDict, TypeVar
 
 from fastapi import Request
@@ -9,7 +10,7 @@ PageDataT = TypeVar("PageDataT")
 
 
 class BeanieQueryParams(TypedDict):
-    """Attribute of beanie query params"""
+    """Attribute of beanie query params."""
 
     limit: int
     skip: int

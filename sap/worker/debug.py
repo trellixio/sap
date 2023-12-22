@@ -28,10 +28,12 @@ class DebugTask:
     name: str
 
     def get_queryset(self, **kwargs: Any) -> str:
-        """Simple queryset that return a datetime string for debugging."""
+        """Return a datetime string for debugging as Queryset."""
+        assert self.name
         return str(datetime.utcnow())
 
     async def process(self, *args: Any, **kwargs: Any) -> dict[str, str]:
+        """Mock a task process for debugging."""
         time_now = self.get_queryset()
 
         # import traceback

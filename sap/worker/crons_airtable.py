@@ -19,7 +19,7 @@ from .crons import CronResponse, CronStat, CronStorage, FetchStrategy
 
 
 class AirtableStorage(CronStorage):
-    """store cron results in Airtable"""
+    """store cron results in Airtable."""
 
     run_id: str = ""
 
@@ -31,7 +31,7 @@ class AirtableStorage(CronStorage):
 
     @classmethod
     def get_env_params(cls) -> tuple[str, str]:
-        """Return env name and env id on airtable"""
+        """Return env name and env id on airtable."""
         raise NotImplementedError
 
     async def record_task(self) -> None:
@@ -44,7 +44,12 @@ class AirtableStorage(CronStorage):
             self.task_id = task_info["id"]
 
         microapp = self.task_name.split(".")[1]
-        fields: WritableFields = {"Project": self.PROJECT_NAME, "Name": self.task_name, "Microapp": microapp, "Env": [env_id]}
+        fields: WritableFields = {
+            "Project": self.PROJECT_NAME,
+            "Name": self.task_name,
+            "Microapp": microapp,
+            "Env": [env_id],
+        }
         if self.task_id:
             task_record = self.get_airtable("tasks").update(self.task_id, fields=fields)
         else:

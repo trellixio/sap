@@ -111,8 +111,14 @@ async def prefetch_related_children(
             print(product.price)
     ```
     """
+
+    def no_filter_func(related_items: list[RDocT], item: DocT) -> list[RDocT]:
+        """Do not apply any filter."""
+        assert item
+        return related_items
+
     if not filter_func:
-        filter_func = lambda related_items, item: related_items
+        filter_func = no_filter_func
 
     item_ids = list(set(item.id for item in item_list))
     related_expression: ExpressionField = getattr(getattr(related_model, related_attribute), "id")
