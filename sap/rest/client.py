@@ -129,9 +129,8 @@ class BeansClient(RestClient):
     @classmethod
     async def get_access_token(cls, code: str, beans_public: str, beans_secret: str) -> RestData:
         """Retrieve access_token to be use to perform API request on behalf on a merchant."""
-        async with httpx.AsyncClient(auth=httpx.BasicAuth(beans_public, beans_secret)) as client:
-            response = await client.get(urllib.parse.urljoin(cls.base_url, f"core/auth/integration_key/{code}"))
-        integration_key = await cls.get_response_data(response)
+        client = RestClient(beans_public, beans_secret)
+        integration_key = await client.get(urllib.parse.urljoin(cls.base_url, f"core/auth/integration_key/{code}"))
 
         if isinstance(integration_key["card"], dict):  # making the code future proof with the upcoming API update
             integration_key["card"] = integration_key["card"]["id"]
