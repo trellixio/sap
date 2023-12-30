@@ -6,7 +6,8 @@ Handle data validation.
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, TypeVar, get_args, get_origin
+import inspect
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, TypeVar, Union, get_args, get_origin
 
 from typing_extensions import Literal
 
@@ -63,18 +64,16 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
 
             related_object = getattr(instance, field_name, None)
 
-            assert field_info.annotation
-
-            # B. The field is an embedded serializer
-            if issubclass(field_info.annotation, ObjectSerializer):
-                return field_info.annotation.read(related_object, exclude=exclude) if related_object else None
-
             origin = get_origin(field_info.annotation)
             args = get_args(field_info.annotation)
 
-            # C. The field is a list of embedded serializer
-            if origin is List and issubclass(args[0], ObjectSerializer):
-                return args[0].read_list(related_object, exclude=field_info.exclude) if related_object else []
+            # B. The field is an embedded serializer
+            if inspect.isclass(origin) and issubclass(origin, ObjectSerializer):
+                return origin.read(related_object, exclude=exclude) if related_object else None
+
+            # C. The field is a list of embedded serializer or optional
+            if origin in [List, Union] and inspect.isclass(args[0]) and issubclass(args[0], ObjectSerializer):
+                return args[0].read(related_object, exclude=field_info.exclude) if related_object else []
 
             return getattr(instance, field_name)
 
@@ -132,7 +131,7 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
         """Override init to filter embedded serializers."""
         super().__init__(**data)
         for field_name, field_info in self.model_fields.items():
-            if field_info.annotation and issubclass(field_info.annotation, WriteObjectSerializer):
+            if inspect.isclass(field_info.annotation) and issubclass(field_info.annotation, WriteObjectSerializer):
                 self.embedded_serializers[field_name] = field_info.annotation
 
     async def run_async_validators(self, **kwargs: Any) -> None:
@@ -161,7 +160,10 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
     ) -> dict[str, Any]:
         """Dump the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
-        assert isinstance(exclude, set) and issubclass(get_args(exclude)[0], str)
+        if exclude:
+            assert isinstance(exclude, set) and issubclass(get_args(exclude)[0], str)
+        else:
+            exclude = set()
         exclude.add("instance")
 
         # # Some fields are only excluded from being cascade dumps to dict,
@@ -169,7 +171,7 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
         # exclude_doc_dumps = {}
 
         for field_name, field_info in self.model_fields.items():
-            if field_info.annotation and issubclass(field_info.annotation, Document):
+            if inspect.isclass(field_info.annotation) and issubclass(field_info.annotation, Document):
                 # exclude_doc_dumps[field_name] = True
                 exclude.add(field_name)
 

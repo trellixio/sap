@@ -3,9 +3,12 @@ Beanie Client.
 
 Initialize connection to the Mongo Database.
 """
+from __future__ import annotations
+
 import asyncio
 import typing
 from dataclasses import dataclass
+from typing import List, Type
 
 import pymongo.errors
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
@@ -38,7 +41,8 @@ class BeanieClient:
     async def init(
         cls,
         mongo_params: DatabaseParams,
-        document_models: typing.List[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]],
+        # document_models: List[Type[beanie.Document] | Type[beanie.View] | str],
+        document_models: List[Type[beanie.Document]] | List[Type[beanie.View]] | List[str],
         force: bool = False,
     ) -> None:
         """Open and maintain a connection to the database.

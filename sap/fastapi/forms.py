@@ -39,7 +39,7 @@ async def validate_form(
     if serializer_read_class and instance:
         # Means this is an update. So we first populate existing data
         serializer_read: SerializerT = serializer_read_class.read(instance=instance)
-        form_data = serializer_read.dict()
+        form_data = serializer_read.model_dump()
 
     form_data_received = await request.form()
     form_data = merge_dict_deep(form_data, unflatten_form_data(form_data_received))
