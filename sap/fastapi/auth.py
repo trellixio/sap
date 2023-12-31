@@ -8,14 +8,14 @@ from __future__ import annotations
 import base64
 import binascii
 import time
-from typing import ClassVar, TypeVar
+from typing import ClassVar, TypeVar, Union
 
 import jwt
 import typing_extensions
 
-import pydantic
 from fastapi import Request, Response
 from fastapi.exceptions import HTTPException
+from pydantic import BaseModel
 
 # from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
 # from starlette.requests import HTTPConnection
@@ -27,7 +27,7 @@ from sap.beanie.document import Document
 from sap.beanie.exceptions import Object404Error
 
 UserT = TypeVar("UserT", bound=Document)
-UserViewT: typing_extensions.TypeAlias = "Document | pydantic.BaseModel"
+UserViewT: typing_extensions.TypeAlias = Union[Document, BaseModel]
 
 
 class JWTAuth:

@@ -73,7 +73,7 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
 
             # C. The field is a list of embedded serializer or optional
             if origin in [List, Union] and inspect.isclass(args[0]) and issubclass(args[0], ObjectSerializer):
-                return args[0].read(related_object, exclude=field_info.exclude) if related_object else []
+                return args[0].read(related_object, exclude=exclude) if related_object else []
 
             return getattr(instance, field_name)
 
@@ -161,10 +161,9 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
         """Dump the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
         if exclude:
-            assert isinstance(exclude, set) and issubclass(get_args(exclude)[0], str)
+            exclude.add("instance")  # type: ignore
         else:
-            exclude = set()
-        exclude.add("instance")
+            exclude = {"instance"}
 
         # # Some fields are only excluded from being cascade dumps to dict,
         # # but their original value is still needed
@@ -173,7 +172,7 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
         for field_name, field_info in self.model_fields.items():
             if inspect.isclass(field_info.annotation) and issubclass(field_info.annotation, Document):
                 # exclude_doc_dumps[field_name] = True
-                exclude.add(field_name)
+                exclude.add(field_name)  # type: ignore
 
         result = super().model_dump(
             mode=mode,

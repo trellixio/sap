@@ -93,7 +93,7 @@ class BaseCronTask(celery.Task):  # type: ignore[misc]
 
         try:
             result = await self.process(**self.kwargs)
-        except Exception as exc:  # pylint: disable=broad-except;
+        except Exception as exc:  # pylint: disable=broad-except
             if not SapSettings.is_env_prod:
                 raise
             self.logger.exception(exc)

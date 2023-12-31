@@ -1,3 +1,6 @@
+"""Mixins to implement a User model."""
+
+
 class UserMixin:
     """Represent a user of the platform."""
 

@@ -4,13 +4,12 @@
 This module contains generic middleware to perform repetitive actions on each request.
 Learn more: https://fastapi.tiangolo.com/tutorial/middleware/
 """
+from __future__ import annotations
 
 import traceback
-import typing
+from typing import Awaitable, Callable, List, Type
 
 import beanie
-from beanie.odm.documents import DocType
-from beanie.odm.views import View
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
@@ -34,9 +33,7 @@ class LogServerErrorMiddleware(BaseHTTPMiddleware):
     https://github.com/tiangolo/fastapi/issues/806
     """
 
-    async def dispatch(
-        self, request: Request, call_next: typing.Callable[[Request], typing.Awaitable[Response]]
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """Render server error."""
         try:
             return await call_next(request)
@@ -51,14 +48,14 @@ class InitBeanieMiddleware:
 
     app: ASGIApp
     mongo_params: DatabaseParams
-    document_models: list[typing.Union[typing.Type[beanie.Document], typing.Type[beanie.View], str]]
+    document_models: List[Type[beanie.Document]] | List[Type[beanie.View]] | List[str]
     force: bool = False
 
     def __init__(
         self,
         app: ASGIApp,
         mongo_params: DatabaseParams,
-        document_models: list[typing.Union[typing.Type["DocType"], typing.Type["View"], str]],
+        document_models: List[Type[beanie.Document]] | List[Type[beanie.View]] | List[str],
         force: bool = False,
     ) -> None:
         """Initialize Middleware."""

@@ -5,7 +5,7 @@ from typing import Any, List, Optional, Union, get_args, get_origin
 
 from beanie.odm.fields import LinkInfo, LinkTypes
 from beanie.odm.registry import DocsRegistry
-from beanie.odm.utils.init import Initializer as Initializer
+from beanie.odm.utils.init import Initializer as Initializer  # pylint: disable=useless-import-alias
 from pydantic.fields import FieldInfo
 
 from .link import Link as MLink

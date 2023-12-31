@@ -9,7 +9,6 @@ import logging
 import typing
 from contextlib import asynccontextmanager
 
-from beanie.odm.views import View
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
@@ -36,7 +35,7 @@ async def lifespan(current_app: FastAPI) -> typing.AsyncGenerator[None, None]:
 app = FastAPI(docs_url=None, redoc_url=None, routes=[], lifespan=lifespan)
 
 
-document_models: list[typing.Union[type[Document], type[View], str]] = []
+document_models: list[type[Document]] = []
 
 # Register middleware
 app.add_middleware(InitBeanieMiddleware, mongo_params=AppSettings.MONGO, document_models=document_models)

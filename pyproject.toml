@@ -41,13 +41,14 @@ max-line-length = "125"  # black will enfore 120, but sometimes it may decides t
 
 [tool.pylint.messages_control]
 disable = [
+    "locally-disabled",
+    "suppressed-message",
     "missing-module-docstring",
     "missing-class-docstring",
     "missing-function-docstring",
     "too-few-public-methods",
-    "locally-disabled",
-    "suppressed-message",
     "too-many-arguments",
+    "line-too-long",  # Line formatting is already handled by Black
 ]
 
 [tool.pylint.design]
@@ -60,7 +61,7 @@ ignored-argument-names = "args|kwargs|request"
 
 [tool.pylint.basic]
 good-names = [
-    "_", "i", "e", "k", "v", "x", "id", "pk", "qs", "setUp", "tearDown", "maxDiff", "AppMain"
+    "_", "i", "e", "k", "v", "x", "id", "pk", "qs", "_t", "setUp", "tearDown", "maxDiff", "AppMain"
 ]
 
 [tool.pylint.similarities]
@@ -96,6 +97,7 @@ warn_untyped_fields = true
 module = [
     "motor",
     "uvicorn",
+    "async_asgi_testclient",
     "celery",
     "celery.bootsteps",
     "celery.worker",
@@ -106,7 +108,6 @@ module = [
     "aioamqp.exceptions",
     "aioamqp.properties",
     "aioamqp.envelope",
-    "async_asgi_testclient",
 ]
 ignore_missing_imports = true
 implicit_reexport = true
@@ -131,5 +132,5 @@ exclude_lines = [
     'def __repr__',
     'def __str__',
     'if typing\.TYPE_CHECKING',
-    'NotImplementedError'
+    'NotImplementedError',
 ]

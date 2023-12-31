@@ -57,7 +57,8 @@ class Document(beanie.Document):
 
     doc_meta: _DocMeta = _DocMeta()
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # pylint: disable=useless-parent-delegation
+        """Silent mypy."""
         super().__init__(*args, **kwargs)
 
     @pydantic.model_validator(mode="after")
