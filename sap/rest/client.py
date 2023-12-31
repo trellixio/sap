@@ -58,6 +58,10 @@ class RestClient:
         """Update an object."""
         return await self.request("PUT", path, json=json)
 
+    async def patch(self, path: str, *, json: dict[str, typing.Any]) -> RestData:
+        """Patch an object."""
+        return await self.request("PATCH", path, json=json)
+
     async def delete(self, path: str, *, json: typing.Optional[dict[str, typing.Any]] = None) -> RestData:
         """Remove an object."""
         return await self.request("DELETE", path, json=json)
@@ -89,23 +93,26 @@ class RestClient:
     @staticmethod
     async def get_response_data(response: httpx.Response) -> RestData:
         """Extract data from Rest API response and raise exceptions when applicable."""
-        response_data = RestData()
 
-        if "application/json" in response.headers.get("content-type", ""):
+        try:
             response_data = RestData(response.json())
+        except ValueError:
+            response_data = RestData()
 
         response_data.response = response
         if response.status_code >= 300:
             logger.debug("Bad response from Rest API code=%d data=%s", response.status_code, str(response_data))
 
         if response.status_code >= 500:  # pragma: no cover
-            raise exceptions.Rest503Error(data=response_data)
+            raise exceptions.Rest503Error(response=response, request=response.request, data=response_data)
         if response.status_code == 404:
             if "text/html" in response.headers["content-type"]:
-                raise exceptions.Rest405Error(data=response_data)
-            raise exceptions.Rest404Error(data=response_data)
+                raise exceptions.Rest405Error(response=response, request=response.request, data=response_data)
+            raise exceptions.Rest404Error(response=response, request=response.request, data=response_data)
         if response.status_code in exceptions.RestErrorMap:
-            raise exceptions.RestErrorMap[response.status_code](data=response_data)
+            raise exceptions.RestErrorMap[response.status_code](
+                response=response, request=response.request, data=response_data
+            )
 
         response.raise_for_status()
 

@@ -1,14 +1,14 @@
+# pylint: disable=too-many-arguments
+
 """REST testing library utils."""
 
 from __future__ import annotations
 
 import typing
-import urllib.parse
 from base64 import b64encode
 
 from async_asgi_testclient import TestClient
 from requests.models import Response
-from rich import print
 
 from fastapi import status
 
@@ -16,13 +16,14 @@ from AppMain.asgi import app
 from sap.beanie.document import DocT
 from sap.fastapi.pagination import PaginatedResponse
 from sap.fastapi.user import UserMixin
-from sap.rest.client import RestClient, RestData
 
 if typing.TYPE_CHECKING:
     from pydantic.error_wrappers import ErrorDict
 
 
 class Headers(typing.TypedDict, total=False):
+    """Format Request headers."""
+
     Authorization: str
 
 
@@ -35,7 +36,7 @@ async def get_headers(user: UserMixin) -> Headers:
 
 
 async def assert_response_forbidden(response: Response) -> bool:
-    """Helper to check that a request was rejected to due to lack sufficient authorization."""
+    """Check that a request was rejected to due to lack sufficient authorization."""
     assert response.status_code in [
         status.HTTP_401_UNAUTHORIZED,
         status.HTTP_403_FORBIDDEN,
@@ -109,7 +110,7 @@ async def assert_rest_can_retrieve(
         for key, value in sample.items():
             if value is None:
                 continue
-            assert type(value) == type(
+            assert type(value) == type(  # pylint: disable=unidiomatic-typecheck
                 response_data[key]
             ), f"TypeMismatch key={key} expected={type(value)} received={type(response_data[key])}"
             if isinstance(value, dict):
@@ -146,7 +147,7 @@ async def assert_rest_can_create(
         response_bad = await client.post(base_url, json=sample | variant_bad)
 
     async def assert_response_authorized() -> bool:
-        """Verify that the action was successfully performed"""
+        """Verify that the action was successfully performed."""
         assert variant_good
         assert variant_bad
 
@@ -201,7 +202,7 @@ async def assert_rest_can_update(
         response_bad = await client.put(f"{base_url}{item_id}/", json=data_initial | variant_bad)
 
     async def assert_response_authorized() -> bool:
-        """Verify that the action was successfully performed"""
+        """Verify that the action was successfully performed."""
         assert variant_good
         assert variant_bad
 
@@ -255,38 +256,3 @@ async def assert_rest_can_destroy(
         return await assert_response_authorized()
 
     return await assert_response_forbidden(response)
-
-
-CACHED_DATA: dict[str, typing.Any] = {}
-
-
-async def rest_client_cache_request(
-    self: RestClient,
-    method: str,
-    path: str,
-    *,
-    json: dict[str, typing.Any] | None = None,
-    params: dict[str, str | int] | None = None,
-    files: list[tuple[str, tuple[str, bytes, str]]] | None = None,
-) -> RestData:
-    """Return cached query if exists otherwise perform API request."""
-
-    def stringify(obj: dict[str, typing.Any] | None) -> str:
-        """Return a human readable string transformation of dict inspired by pytest parametrization."""
-        if obj is None:
-            return "None"
-        return "-".join([f"{k}_{v}" for k, v in obj.items()])
-
-    request_key = f"{method}:{path}:{stringify(json)}:{stringify(params)}:{files}"
-    if request_key in CACHED_DATA:
-        return RestData(CACHED_DATA[request_key])
-
-    url: str = path if "://" in path else urllib.parse.urljoin(self.base_url, path)
-    async with self._get_client() as client:
-        response = await client.request(method, url, json=json, params=params, files=files)
-
-    print(f"NON-CACHED QUERY {request_key=} result=>")
-    result = await self.get_response_data(response)
-    print(result)
-    breakpoint()
-    return result

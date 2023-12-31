@@ -7,6 +7,8 @@ Known exceptions that can occur while using the app.
 
 import typing
 
+import httpx
+
 # ---------------------------------------
 # --------- Rest API ERROR -------------
 # ---------------------------------------
@@ -20,6 +22,8 @@ class RestAPIError(Exception):
     code: int = 0
     message: str = ""
     data: typing.Optional[dict[str, str]] = None
+    request: httpx.Request
+    response: httpx.Response
 
     def __repr__(self) -> str:
         """Display a string representation of the object."""
@@ -29,10 +33,18 @@ class RestAPIError(Exception):
         """Display a string representation of the error."""
         return str(self.message)
 
-    def __init__(self, *args: object, data: typing.Optional[dict[str, typing.Any]] = None) -> None:
+    def __init__(
+        self,
+        *args: object,
+        request: httpx.Request,
+        response: httpx.Response,
+        data: typing.Optional[dict[str, typing.Any]] = None,
+    ) -> None:
         """Add error data."""
         super().__init__(*args)
         self.data = data
+        self.request = request
+        self.response = response
 
         if not data:
             return
@@ -45,11 +57,15 @@ class RestAPIError(Exception):
                 self.message = ". ".join(error_)
             elif isinstance(error_, dict) and "message" in error_:
                 self.message = error_["message"]
+            return
 
         # verify if `message` is in data and if it is not empty
         if message_ := data.get("message"):
             if isinstance(message_, str):
                 self.message = message_
+            return
+
+        self.message = str(data)
 
 
 class Rest400Error(RestAPIError):
