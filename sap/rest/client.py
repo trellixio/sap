@@ -15,7 +15,7 @@ import httpx
 
 from sap.loggers import logger
 
-from . import exceptions
+from . import rest_exceptions
 
 
 class RestData(dict[str, typing.Any]):
@@ -104,13 +104,13 @@ class RestClient:
             logger.debug("Bad response from Rest API code=%d data=%s", response.status_code, str(response_data))
 
         if response.status_code >= 500:  # pragma: no cover
-            raise exceptions.Rest503Error(response=response, request=response.request, data=response_data)
+            raise rest_exceptions.Rest503Error(response=response, request=response.request, data=response_data)
         if response.status_code == 404:
             if "text/html" in response.headers["content-type"]:
-                raise exceptions.Rest405Error(response=response, request=response.request, data=response_data)
-            raise exceptions.Rest404Error(response=response, request=response.request, data=response_data)
-        if response.status_code in exceptions.RestErrorMap:
-            raise exceptions.RestErrorMap[response.status_code](
+                raise rest_exceptions.Rest405Error(response=response, request=response.request, data=response_data)
+            raise rest_exceptions.Rest404Error(response=response, request=response.request, data=response_data)
+        if response.status_code in rest_exceptions.RestErrorMap:
+            raise rest_exceptions.RestErrorMap[response.status_code](
                 response=response, request=response.request, data=response_data
             )
 

@@ -14,7 +14,7 @@ from typing import Any
 import httpx
 from rich import print  # pylint: disable=redefined-builtin
 
-from sap.rest.exceptions import RestErrorMap
+from sap.rest.rest_exceptions import RestErrorMap
 
 
 def generate_random_string(length: int) -> str:
