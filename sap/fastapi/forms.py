@@ -57,7 +57,7 @@ async def validate_form(
         serializer_write = await run_validation()
     except pydantic.ValidationError as err:
         form_errors = pydantic_format_errors(err.errors())
-        msg = "Les informations soumises ne sont pas valides."
+        msg = "Please review submitted form."
         form_errors["__root__"] = {"msg": msg}
         Flash.add_message(request, msg, level=FlashLevel.ERROR)
     except (AssertionError, Validation422Error) as err:

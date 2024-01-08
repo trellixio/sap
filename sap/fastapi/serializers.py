@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 
 from sap.beanie.document import DocT, Document, ModelT
+from sap.typing import UnionType
 
 from .pagination import CursorInfo, PaginatedData
 
@@ -72,7 +73,11 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
                 return origin.read(related_object, exclude=exclude) if related_object else None
 
             # C. The field is a list of embedded serializer or optional
-            if origin in [List, Union] and inspect.isclass(args[0]) and issubclass(args[0], ObjectSerializer):
+            if (
+                origin in [List, Union, UnionType]
+                and inspect.isclass(args[0])
+                and issubclass(args[0], ObjectSerializer)
+            ):
                 return args[0].read(related_object, exclude=exclude) if related_object else []
 
             return getattr(instance, field_name)

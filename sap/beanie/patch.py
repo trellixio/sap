@@ -8,6 +8,8 @@ from beanie.odm.registry import DocsRegistry
 from beanie.odm.utils.init import Initializer as Initializer  # pylint: disable=useless-import-alias
 from pydantic.fields import FieldInfo
 
+from sap.typing import UnionType
+
 from .link import Link as MLink
 
 original__detect_link = Initializer.detect_link
@@ -38,7 +40,7 @@ def detect_link(self, field: FieldInfo, field_name: str) -> Optional[LinkInfo]:
     if origin is List and get_origin(args[0]) is MLink:
         return get_link_info(LinkTypes.LIST, type_args=get_args(args[0]))
 
-    if origin is Union and get_origin(args[0]) is MLink:
+    if origin in [Union, UnionType] and get_origin(args[0]) is MLink:
         return get_link_info(LinkTypes.OPTIONAL_DIRECT, type_args=get_args(args[0]))
 
     return original__detect_link(self, field=field, field_name=field_name)

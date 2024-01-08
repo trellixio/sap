@@ -87,17 +87,22 @@ class RestClient:
 
         async with self._get_client() as client:
             response = await client.request(method, url, json=json, params=params, files=files)
-
         return await self.get_response_data(response)
 
     @staticmethod
     async def get_response_data(response: httpx.Response) -> RestData:
         """Extract data from Rest API response and raise exceptions when applicable."""
+        res_json: typing.Union[dict[str, typing.Any], list[typing.Any]]
 
         try:
-            response_data = RestData(response.json())
+            res_json = response.json()
         except ValueError:
-            response_data = RestData()
+            res_json = {}
+
+        if isinstance(res_json, dict):
+            response_data = RestData(res_json)
+        else:
+            response_data = RestData({"data": res_json})
 
         response_data.response = response
         if response.status_code >= 300:

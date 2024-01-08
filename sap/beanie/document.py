@@ -5,7 +5,7 @@ Override beanie Documents to useful methods.
 Most of the methods are inspired from Django behavior on querying data.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Type, TypeVar, Union
 
@@ -26,6 +26,7 @@ class DocSourceEnum(Enum):
     """Source where a document has been fetched from."""
 
     WEBHOOK: str = "webhook"
+    RETRIEVE: str = "retrieve"
     CRON: str = "cron"
 
 
@@ -47,7 +48,7 @@ class _DocMeta(pydantic.BaseModel):
 #     @pydantic.model_validator(mode='after')
 #     def validate_doc_meta(self) -> 'DocMeta':
 #         """Validate doc meta on each model update."""
-#         self.doc_meta.updated = datetime.utcnow()
+#         self.doc_meta.updated = datetime.now(timezone.utc)
 #         self.doc_meta.created = self.doc_meta.created or self.doc_meta.updated
 #         return self
 
@@ -64,7 +65,7 @@ class Document(beanie.Document):
     @pydantic.model_validator(mode="after")
     def validate_doc_meta(self) -> "Document":
         """Validate doc meta on each model update."""
-        self.doc_meta.updated = datetime.utcnow()
+        self.doc_meta.updated = datetime.now(timezone.utc)
         self.doc_meta.created = self.doc_meta.created or self.doc_meta.updated
         return self
 
