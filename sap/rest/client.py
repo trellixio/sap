@@ -87,6 +87,8 @@ class RestClient:
 
         async with self._get_client() as client:
             response = await client.request(method, url, json=json, params=params, files=files)
+
+        print(f"{method} {url} {response}")
         return await self.get_response_data(response)
 
     @staticmethod

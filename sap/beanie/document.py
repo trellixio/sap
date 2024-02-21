@@ -30,7 +30,7 @@ class DocSourceEnum(Enum):
     CRON: str = "cron"
 
 
-class _DocMeta(pydantic.BaseModel):
+class DocMeta(pydantic.BaseModel):
     """Meta Data allowing to keep trace of Documents versioning and updates."""
 
     version: int = 0  # version of the document being imported
@@ -40,23 +40,10 @@ class _DocMeta(pydantic.BaseModel):
     deleted: Optional[datetime] = None  # when the document was deleted, (deleted document may be retained for logging)
 
 
-# class DocMeta(pydantic.BaseModel):
-#     """Manage meta data and ensure that it's correctly set."""
-
-#     doc_meta: _DocMeta = _DocMeta()
-
-#     @pydantic.model_validator(mode='after')
-#     def validate_doc_meta(self) -> 'DocMeta':
-#         """Validate doc meta on each model update."""
-#         self.doc_meta.updated = datetime.now(timezone.utc)
-#         self.doc_meta.created = self.doc_meta.created or self.doc_meta.updated
-#         return self
-
-
 class Document(beanie.Document):
     """Subclass beanie.Document that add handy methods."""
 
-    doc_meta: _DocMeta = _DocMeta()
+    doc_meta: DocMeta = DocMeta()
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:  # pylint: disable=useless-parent-delegation
         """Silent mypy."""
