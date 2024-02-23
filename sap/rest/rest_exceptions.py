@@ -130,4 +130,6 @@ RestErrorMap = {
     501: Rest503Error,
     502: Rest503Error,
     503: Rest503Error,
+    504: Rest503Error,
+    505: Rest503Error,
 }
