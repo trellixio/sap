@@ -62,8 +62,8 @@ def register_lambda(lambda_task_class: type[LambdaTask]) -> LambdaTask:
 class LambdaWorker(celery.bootsteps.ConsumerStep):  # type: ignore[misc]
     """Celery worker that consumes packets (messages) sent to lambda queues."""
 
-    packets: list[SignalPacket]
-    name: str
+    packets: list[SignalPacket] = []
+    name: str = ""
 
     def _get_queues(self, channel: StdChannel) -> list[kombu.Queue]:
         """Retrieve the list of AMQP queues associated to each packet signal."""
