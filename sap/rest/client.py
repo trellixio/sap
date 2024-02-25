@@ -34,6 +34,7 @@ class RestClient:
     basic_username: str = ""
     basic_password: str = ""
     base_url: str = ""
+    response_cache: httpx.Response = None
 
     def __init__(self, basic_username: str = "", basic_password: str = "") -> None:
         """Initialize the API client."""
@@ -89,6 +90,7 @@ class RestClient:
             response = await client.request(method, url, json=json, params=params, files=files)
 
         print(f"{method} {url} {response}")
+        self.response_cache = response
         return await self.get_response_data(response)
 
     @staticmethod
