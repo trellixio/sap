@@ -7,7 +7,7 @@ They run code in response to events which are typically messages sent to a queue
 # mypy: disable-error-code="import-untyped"
 
 import asyncio
-from typing import Any
+from typing import Any, ClassVar
 
 import celery
 import celery.bootsteps
@@ -63,7 +63,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):  # type: ignore[misc]
     """Celery worker that consumes packets (messages) sent to lambda queues."""
 
     packets: list[SignalPacket] = []
-    name: str = ""
+    name: ClassVar[str] = ""
 
     def _get_queues(self, channel: StdChannel) -> list[kombu.Queue]:
         """Retrieve the list of AMQP queues associated to each packet signal."""
