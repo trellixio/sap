@@ -8,6 +8,7 @@ They run code in response to events which are typically messages sent to a queue
 
 import asyncio
 from typing import Any
+import typing
 
 import celery
 import celery.bootsteps
@@ -63,7 +64,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):  # type: ignore[misc]
     """Celery worker that consumes packets (messages) sent to lambda queues."""
 
     packets: list[SignalPacket] = []
-    name: str = ""
+    name: typing.ClassVar[str] = ""
 
     def _get_queues(self, channel: StdChannel) -> list[kombu.Queue]:
         """Retrieve the list of AMQP queues associated to each packet signal."""
