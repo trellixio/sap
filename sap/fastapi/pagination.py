@@ -1,4 +1,5 @@
 """Utils for pagination."""
+
 from typing import Any, Generic, Optional, TypedDict, TypeVar
 
 from fastapi import Request
@@ -24,6 +25,7 @@ class CursorInfo:
     This is a fake cursor paginator.
     """
 
+    count: int = -1
     offset: int = 0
     limit: int = 10
     limit_max: int = 250
@@ -50,15 +52,25 @@ class CursorInfo:
             "sort": self.sort,
         }
 
+    def set_count(self, value: int) -> int:
+        """Set the total count of the query."""
+        self.count = value
+
+    def get_count(self) -> int:
+        """Return the total count of the query."""
+        return self.count
+
     def get_next(self) -> Optional[str]:
         """Get the cursor to paginate forward."""
         offset = self.offset + self.limit
+        if offset >= self.get_count() >= 0:
+            return None
         return utils.base64_url_encode(f"{self.limit},{offset}")
 
     def get_previous(self) -> Optional[str]:
         """Get the cursor to paginate backward."""
         offset = self.offset - self.limit
-        if offset <= 0:
+        if offset < 0:
             return None
         return utils.base64_url_encode(f"{self.limit},{offset}")
 
