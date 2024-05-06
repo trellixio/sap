@@ -9,8 +9,7 @@ import pytest
 from AppMain.settings import AppSettings
 from sap.beanie.client import BeanieClient
 from sap.worker import AMQPClient, LambdaTask, LambdaWorker, SignalPacket, register_lambda
-
-from .samples import DummyDoc
+from tests.samples import DummyDoc
 
 AMQPClient.db_params = AppSettings.RABBITMQ
 
@@ -24,7 +23,7 @@ class DummyLambdaTask(LambdaTask):
 
     async def handle_process(self, *args: str, **kwargs: typing.Any) -> dict[str, typing.Any]:
         await BeanieClient.init(mongo_params=AppSettings.MONGO, document_models=[DummyDoc])
-        doc = await DummyDoc(num=kwargs["timestamp"]).create()
+        doc = await DummyDoc(num=kwargs["timestamp"], name="lambda task run").create()
         assert doc.id, "DummyDoc has not been created"
         await doc.delete()
         self.results.append(kwargs["timestamp"])
@@ -42,7 +41,7 @@ class DummyLambdaWorker(LambdaWorker):
     """Create a dummy Lambda worker for testing."""
 
     packets = [SignalPacket("sap_tests.#", providing_args=["identifier", "kwargs"])]
-    name = "tests.LambdaWorker"
+    name = "tests.DummyLambdaWorker"
 
     def get_task_list(self) -> list[LambdaTask]:
         """Register dummy task."""

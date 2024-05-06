@@ -3,6 +3,7 @@
 
 Handle data validation.
 """
+
 from __future__ import annotations
 
 import datetime
@@ -111,13 +112,10 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
         request: Request,
     ) -> PaginatedData["SerializerT"]:
         """Serialize a list of objects."""
-
-        # TODO: implemented proper cursor pagination, for now fake it till you make it.
-
         page_next = cursor_info.get_next()
         page_previous = cursor_info.get_previous()
         return PaginatedData(
-            count=0,
+            count=cursor_info.get_count(),
             next=str(request.url.include_query_params(cursor=page_next)) if page_next else None,
             previous=str(request.url.include_query_params(cursor=page_previous)) if page_previous else None,
             data=cls.read_list(instance_list),
