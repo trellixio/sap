@@ -5,16 +5,18 @@ Initialize testing with module wide fixtures.
 """
 
 import asyncio
-import typing
 import hashlib
+import typing
 
 import pytest
 import pytest_asyncio
 
+from fastapi import Request
+
 from AppMain.asgi import document_models, initialize_beanie
 from AppMain.settings import AppSettings
-from tests.samples import DummyDoc, EmbeddedDummyDoc
 from sap.tests.utils import generate_random_string
+from tests.samples import DummyDoc, EmbeddedDummyDoc
 
 
 @pytest.fixture(scope="session")
@@ -76,6 +78,24 @@ async def populate_dummy_doc() -> typing.AsyncGenerator[bool, None]:
     result = await DummyDoc.find_all().delete_many()
     assert result
     print(f"\nDeleted {result.deleted_count} DummyDoc")
+
+
+@pytest_asyncio.fixture(scope="session", name="request_basic")
+async def fixture_request_basic() -> Request:
+    """Fixture: cookie of an authenticated merchant."""
+    request_scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "server": ("127.0.0.1", 8000),
+        "client": ("127.0.0.1", 59957),
+        "scheme": "https",
+        "method": "GET",
+        "headers": [("host", "localhost:8000")],
+        "path_params": {"card_address": "$xxx"},
+        "query_string": b"limit=1",
+        "path": "/api/v1/dummy/",
+    }
+    return Request(scope=request_scope)
 
 
 # from celery.contrib.pytest import celery_app

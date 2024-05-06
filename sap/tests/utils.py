@@ -119,7 +119,7 @@ async def cache__httpx__request(
     if response.content:
         if response.headers.get("content-type") == "application/json":
             response_data["json"] = response.json()
-        else: 
+        else:
             response_data["content"] = response.content
         print(response_data)
     return response

@@ -16,7 +16,6 @@ from AppMain.settings import AppSettings
 from sap.settings import SapSettings
 from sap.worker.crons import CronStat, CronStorage, CronTask, FetchStrategy, register_crontask
 from sap.worker.crons_airtable import AirtableStorage
-
 from tests.samples import DummyDoc
 
 AIRTABLE_APP = "app9HzOEd8QnsCbJ4"
