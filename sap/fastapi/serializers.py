@@ -66,7 +66,7 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
 
             related_object = getattr(instance, field_name, None)
 
-            origin = get_origin(field_info.annotation)
+            origin = get_origin(field_info.annotation) or field_info.annotation
             args = get_args(field_info.annotation)
 
             # B. The field is an embedded serializer
