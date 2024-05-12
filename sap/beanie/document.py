@@ -28,6 +28,7 @@ class DocSourceEnum(Enum):
     WEBHOOK: str = "webhook"
     RETRIEVE: str = "retrieve"
     CRON: str = "cron"
+    PARENT: str = "parent"
 
 
 class DocMeta(pydantic.BaseModel):
