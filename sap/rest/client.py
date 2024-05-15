@@ -135,7 +135,7 @@ class BeansClient(RestClient):
     Common errors are handled by the wrapper.
     """
 
-    base_url: str = "https://api.stem.trybeans.com/v3/"
+    base_url: str = "https://api.trybeans.com/v3/"
 
     def __init__(self, access_token: str | None) -> None:
         """Initialize the API client."""
