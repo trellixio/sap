@@ -3,6 +3,7 @@ Packet.
 
 Packets are messages sent through a queue service to run a task on a remote server.
 """
+
 import json
 import re
 import typing
@@ -37,6 +38,8 @@ class _Packet:
     _event_type: str
     connections: dict[str, AMQPClient] = {}
     providing_args: list[str]
+    extra_exchange_arguments: dict[str, typing.Any] = {}
+    extra_queue_arguments: dict[str, typing.Any] = {}
 
     def __init__(self, topic: str, providing_args: list[str]):
         """
@@ -93,6 +96,7 @@ class _Packet:
             exchange_name=self.exchange_get_name(),
             type_name=self._exchange_type,
             durable=self._is_durable,
+            arguments=self.extra_exchange_arguments,
         )
         if is_fallback:
             await channel.exchange_declare(
@@ -146,25 +150,26 @@ class SignalPacket(_Packet):
         suffix: str = "@retry" if is_fallback else ""
         return f"{self._event_type}:{self.topic}->{task_name}{suffix}"
 
-    def queue_get_params(self, task_name: str, is_fallback: bool = False) -> dict[str, typing.Any]:
-        """Retrieve params used to declare the queue."""
-        name = self.queue_get_name(task_name=task_name, is_fallback=is_fallback)
-        exchange_primary = self.exchange_get_name(is_fallback=False)
-        exchange_fallback = self.exchange_get_name(is_fallback=True)
-        arguments = {
+    def queue_get_args(self, is_fallback: bool) -> dict[str, typing.Any]:
+        """Get arguments for primary queue."""
+        args = {
             "x-delivery-limit": 5,
-            "x-dead-letter-exchange": exchange_primary if is_fallback else exchange_fallback,
+            "x-dead-letter-exchange": self.exchange_get_name(is_fallback=not is_fallback),  # This is the opposite
         }
         if is_fallback:
-            arguments["x-message-ttl"] = 1000 * 60 * 60 * 6  # 6 hours
+            args |= {"x-message-ttl": 1000 * 60 * 60 * 6}  # 6 hours
         else:
-            arguments["x-queue-type"] = "quorum"
+            args |= {"x-queue-type": "quorum"} | self.extra_queue_arguments
+        return args
+
+    def queue_get_params(self, task_name: str, is_fallback: bool = False) -> dict[str, typing.Any]:
+        """Retrieve params used to declare the queue."""
         return {
-            "name": name,
-            "exchange": exchange_fallback if is_fallback else exchange_primary,
+            "name": self.queue_get_name(task_name=task_name, is_fallback=is_fallback),
+            "exchange": self.exchange_get_name(is_fallback=is_fallback),
             "routing_key": self.topic,
             "durable": True,
-            "queue_arguments": arguments,
+            "queue_arguments": self.queue_get_args(is_fallback=is_fallback),
         }
 
     async def queue_declare(self, task_name: str) -> None:
@@ -173,31 +178,12 @@ class SignalPacket(_Packet):
 
         channel = await self.get_default_channel()
 
-        exchange_name = self.exchange_get_name()
-        queue_name = self.queue_get_name(task_name)
-        exchange_name_dead = self.exchange_get_name(is_fallback=True)
-        queue_name_dead = self.queue_get_name(task_name, is_fallback=True)
-
         # A. Setup queue for dead packets
-        await channel.queue_declare(
-            queue_name=queue_name_dead,
-            durable=True,
-            arguments={
-                "x-delivery-limit": 5,
-                "x-message-ttl": 1000 * 60 * 60 * 6,  # 6 hours
-                "x-dead-letter-exchange": exchange_name,
-            },
-        )
-        await channel.queue_bind(queue_name=queue_name_dead, exchange_name=exchange_name_dead, routing_key=self.topic)
+        params = self.queue_get_params(task_name, is_fallback=True)
+        await channel.queue_declare(params["name"], durable=True, arguments=params["queue_arguments"])
+        await channel.queue_bind(params["name"], exchange_name=params["exchange"], routing_key=self.topic)
 
         # B. Setup queue for packets
-        await channel.queue_declare(
-            queue_name=queue_name,
-            durable=True,
-            arguments={
-                "x-queue-type": "quorum",
-                "x-delivery-limit": 5,
-                "x-dead-letter-exchange": exchange_name_dead,
-            },
-        )
-        await channel.queue_bind(queue_name=queue_name, exchange_name=exchange_name, routing_key=self.topic)
+        params = self.queue_get_params(task_name, is_fallback=False)
+        await channel.queue_declare(params["name"], durable=True, arguments=params["queue_arguments"])
+        await channel.queue_bind(params["name"], exchange_name=params["exchange"], routing_key=self.topic)
