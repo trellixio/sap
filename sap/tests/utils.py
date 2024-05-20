@@ -112,7 +112,7 @@ async def cache__httpx__request(
     # breakpoint()
     response = await self.send(request, auth=auth, follow_redirects=follow_redirects)
 
-    response_data = {
+    response_data: dict[str, Any] = {
         "status_code": response.status_code,
         # "headers": response.headers,
     }
