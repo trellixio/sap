@@ -15,8 +15,10 @@ from unittest import mock
 
 import celery
 import celery.schedules
+import httpx
 
 from beanie.odm.queries.find import FindMany
+from fastapi import status as rest_status
 
 from sap.loggers import logger
 from sap.settings import SapSettings
@@ -239,3 +241,22 @@ def register_crontask(
 ) -> CronTask:
     """Register a task on the worker servers."""
     return crontask_class(schedule=schedule, kwargs=kwargs or {})
+
+
+class HealthCheckCron(CronTask):
+    """Send a heartbeat signal to better stack to notify that the cron has finished processing."""
+
+    def get_queryset(self, *, batch_size: Optional[int] = None, **kwargs: Any) -> list[int]:
+        """Fetch the list of elements to process."""
+        return []
+
+    async def process(self, *, batch_size: int = 100, **kwargs: Any) -> dict[str, int]:
+        """Perform heartbeat signal."""
+        async with httpx.AsyncClient() as client:
+            response: httpx.Response = await client.head(kwargs["heartbeat_url"])
+        assert response.status_code == rest_status.HTTP_200_OK
+        return {"status": response.status_code}
+
+    async def get_stats(self) -> list[CronStat]:
+        """Give stats about the number of elements left to process."""
+        return []

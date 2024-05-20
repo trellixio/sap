@@ -34,7 +34,7 @@ class RestClient:
     basic_username: str = ""
     basic_password: str = ""
     base_url: str = ""
-    response_cache: httpx.Response = None
+    response_cache: typing.Optional[httpx.Response] = None
 
     def __init__(self, basic_username: str = "", basic_password: str = "") -> None:
         """Initialize the API client."""

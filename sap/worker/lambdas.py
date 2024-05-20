@@ -12,8 +12,11 @@ from typing import Any, ClassVar
 import celery
 import celery.bootsteps
 import celery.worker.consumer
+import httpx
 import kombu
 from kombu.transport.base import StdChannel  # Channel
+
+from fastapi import status as rest_status
 
 from sap.loggers import logger
 
@@ -143,3 +146,28 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):  # type: ignore[misc]
     def get_task_list(self) -> list[LambdaTask]:
         """Retrieve the list of lambda tasks to execute."""
         raise NotImplementedError
+
+
+packet_heartbeat = SignalPacket("sap.heartbeat.created", providing_args=["heartbeat_url"])
+packet_heartbeat.extra_exchange_arguments = {"x-delay": 5 * 60 * 1000}  # 5 minutes delay in-between checks
+
+
+class HealthCheckLambda(LambdaTask):
+    """Send a heartbeat signal to better stack to notify that the cron has finished processing."""
+
+    packet: SignalPacket = packet_heartbeat
+    # heartbeat_url: pydantic.HttpUrl = pydantic.HttpUrl()
+
+    async def handle_process(self, *args: str, **kwargs: Any) -> dict[str, Any]:
+        """Perform heartbeat."""
+        await self.heartbeat(self)
+        return {"result": True}
+
+    async def heartbeat(self, heartbeat_url: str) -> None:
+        """Use heartbeat url to notify that everything is up and running as expected."""
+
+        async with httpx.AsyncClient() as client:
+            response: httpx.Response = await client.head(heartbeat_url)
+        assert response.status_code == rest_status.HTTP_200_OK
+
+        await packet_heartbeat.send(heartbeat_url)
