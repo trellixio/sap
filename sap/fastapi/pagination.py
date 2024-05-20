@@ -52,7 +52,7 @@ class CursorInfo:
             "sort": self.sort,
         }
 
-    def set_count(self, value: int) -> int:
+    def set_count(self, value: int) -> None:
         """Set the total count of the query."""
         self.count = value
 

@@ -79,7 +79,7 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
                 and inspect.isclass(args[0])
                 and issubclass(args[0], ObjectSerializer)
             ):
-                value_default = [] if origin == List else None
+                value_default: Union[list[Any], None] = [] if origin == List else None
                 return args[0].read(related_object, exclude=exclude) if related_object else value_default
 
             return getattr(instance, field_name)
