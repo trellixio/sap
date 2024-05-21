@@ -141,7 +141,7 @@ class SignalPacket(_Packet):
             properties={"content_type": "application/json"},
         )
 
-    def queue_get_name(self, task_name: str, is_fallback: bool = False) -> str:
+    def queue_get_name(self, task_name: str, is_fallback: bool   = False) -> str:
         """
         Get queue name.
 

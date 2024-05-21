@@ -10,6 +10,7 @@ from AppMain.settings import AppSettings
 from sap.beanie.client import BeanieClient
 from sap.worker import AMQPClient, LambdaTask, LambdaWorker, SignalPacket, register_lambda
 from tests.samples import DummyDoc
+from sap.settings import SapSettings
 
 AMQPClient.db_params = AppSettings.RABBITMQ
 
@@ -64,6 +65,8 @@ async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worke
     identifier = "card_12345"
     timestamp = int(time.time())
 
+    SapSettings.is_env_dev = False
+
     # Send packet
     packet_yes = SignalPacket(f"sap_tests.app.{identifier}.user.created", providing_args=["identifier", "timestamp"])
     packet_no = SignalPacket(f"sap_tests.app.{identifier}.merchant.updated", providing_args=["identifier", "timestamp"])
@@ -79,3 +82,5 @@ async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worke
     assert timestamp + 2 not in DummyLambdaTask.results
     assert timestamp + 3 in DummyLambdaTask.results
     assert timestamp + 4 not in DummyLambdaTask.results
+
+    SapSettings.is_env_dev = True
