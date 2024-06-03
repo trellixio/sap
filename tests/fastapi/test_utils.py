@@ -3,12 +3,14 @@ Test Utils.
 
 Test xlib.utils functions.
 """
+
 import typing
 
 import pytest
 from async_asgi_testclient import TestClient
 
 from fastapi import Request
+from fastapi.datastructures import FormData
 
 from AppMain.asgi import app
 from sap.fastapi import utils
@@ -37,6 +39,25 @@ if typing.TYPE_CHECKING:
 def test_pydantic_format_errors(data_input: list["ErrorDict"], data_output: dict[str, dict[str, typing.Any]]) -> None:
     """Test that output matches func(input)."""
     result = utils.pydantic_format_errors(data_input)
+    assert result == data_output
+
+
+@pytest.mark.parametrize(
+    ("data_input", "data_output"),
+    [
+        (
+            {"user[first_name]": "John", "user[last_name]": "Doe", "middle_name": "Moi"},
+            {"user": {"first_name": "John", "last_name": "Doe"}, "middle_name": "Moi"},
+        ),
+        (
+            FormData([("users[]", "John"), ("users[]", "Doe"), ("middle_name", "Moi")]),
+            {"users": ["John", "Doe"], "middle_name": "Moi"},
+        ),
+    ],
+)
+def test_unflatten_form_data(data_input: typing.Mapping[str, typing.Any], data_output: dict[str, typing.Any]) -> None:
+    """Test that output matches func(input)."""
+    result = utils.unflatten_form_data(data_input)
     assert result == data_output
 
 
