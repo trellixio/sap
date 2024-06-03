@@ -8,9 +8,9 @@ import pytest
 
 from AppMain.settings import AppSettings
 from sap.beanie.client import BeanieClient
+from sap.settings import SapSettings
 from sap.worker import AMQPClient, LambdaTask, LambdaWorker, SignalPacket, register_lambda
 from tests.samples import DummyDoc
-from sap.settings import SapSettings
 
 AMQPClient.db_params = AppSettings.RABBITMQ
 
