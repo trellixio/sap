@@ -46,12 +46,16 @@ def test_pydantic_format_errors(data_input: list["ErrorDict"], data_output: dict
     ("data_input", "data_output"),
     [
         (
-            {"user[first_name]": "John", "user[last_name]": "Doe", "middle_name": "Moi"},
+            FormData({"user[first_name]": "John", "user[last_name]": "Doe", "middle_name": "Moi"}),
             {"user": {"first_name": "John", "last_name": "Doe"}, "middle_name": "Moi"},
         ),
         (
             FormData([("users[]", "John"), ("users[]", "Doe"), ("middle_name", "Moi")]),
             {"users": ["John", "Doe"], "middle_name": "Moi"},
+        ),
+        (
+            FormData([("user[names[]]", "John"), ("user[names[]]", "Doe"), ("middle_name", "Moi")]),
+            {"user": {"names": ["John", "Doe"]}, "middle_name": "Moi"},
         ),
     ],
 )
