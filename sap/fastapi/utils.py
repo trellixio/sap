@@ -115,11 +115,11 @@ def merge_dict_deep(dict_a: dict[str, Any], dict_b: dict[str, Any], path: Option
     return dict_a
 
 
-regex_unflatten_dict = re.compile(r"(?P<key_parent>\w+)\[(?P<key_child>\w+)\]")
+regex_unflatten_dict = re.compile(r"(?P<key_parent>\w+)\[(?P<key_child>[\w\[\]]+)\]")
 regex_unflatten_list = re.compile(r"(?P<key_parent>\w+)\[\]")
 
 
-def unflatten_form_data(form_data: FormData[str, Any]) -> dict[str, Any]:
+def unflatten_form_data(form_data: FormData[str, Any]) -> FormData[str, Any]:
     """
     Un-flatten a form data and return the corresponding cascading dict.
 
@@ -135,17 +135,21 @@ def unflatten_form_data(form_data: FormData[str, Any]) -> dict[str, Any]:
     ```
     """
     res: dict[str, Any] = {}
-
+    
     for key, value in form_data.multi_items():
         if reg_match := regex_unflatten_dict.match(key):
-            key_parent, key_child = reg_match.groups()
-            res.setdefault(key_parent, {})
-            res[key_parent][key_child] = value
+            key_0, key_1 = reg_match.groups()
+            res.setdefault(key_0, {})
+            if reg_match_child := regex_unflatten_list.match(key_1):
+                key_10 = reg_match_child.group(1)
+                res[key_0].setdefault(key_10, [])
+                res[key_0][key_10].append(value)
+            else:
+                res[key_0][key_1] = value
         elif reg_match := regex_unflatten_list.match(key):
-            key_parent = reg_match.group(1)
-            res.setdefault(key_parent, [])
-            print(f"{res=} {key_parent=} {key=} {value=}")
-            res[key_parent].append(value)
+            key_0 = reg_match.group(1)
+            res.setdefault(key_0, [])
+            res[key_0].append(value)
         else:
             res[key] = value
 
