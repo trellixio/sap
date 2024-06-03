@@ -8,9 +8,10 @@ that needs to be re-used but are not a core part of the app logic.
 import base64
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from fastapi import Request
+from fastapi.datastructures import FormData
 
 if TYPE_CHECKING:
     from pydantic.error_wrappers import ErrorDict
@@ -114,10 +115,11 @@ def merge_dict_deep(dict_a: dict[str, Any], dict_b: dict[str, Any], path: Option
     return dict_a
 
 
-unflatten_regex = re.compile(r"(?P<key_parent>\w+)\[(?P<key_child>\w+)\]")
+regex_unflatten_dict = re.compile(r"(?P<key_parent>\w+)\[(?P<key_child>\w+)\]")
+regex_unflatten_list = re.compile(r"(?P<key_parent>\w+)\[\]")
 
 
-def unflatten_form_data(form_data: Mapping[str, Any]) -> dict[str, Any]:
+def unflatten_form_data(form_data: FormData[str, Any]) -> dict[str, Any]:
     """
     Un-flatten a form data and return the corresponding cascading dict.
 
@@ -134,11 +136,16 @@ def unflatten_form_data(form_data: Mapping[str, Any]) -> dict[str, Any]:
     """
     res: dict[str, Any] = {}
 
-    for key, value in form_data.items():
-        if reg_match := unflatten_regex.match(key):
+    for key, value in form_data.multi_items():
+        if reg_match := regex_unflatten_dict.match(key):
             key_parent, key_child = reg_match.groups()
             res.setdefault(key_parent, {})
             res[key_parent][key_child] = value
+        elif reg_match := regex_unflatten_list.match(key):
+            key_parent = reg_match.group(1)
+            res.setdefault(key_parent, [])
+            print(f"{res=} {key_parent=} {key=} {value=}")
+            res[key_parent].append(value)
         else:
             res[key] = value
 

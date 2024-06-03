@@ -6,6 +6,7 @@ Use this wrapper to perform API requests with a REST app.
 
 Learn more about REST: https://en.wikipedia.org/wiki/Representational_state_transfer
 """
+
 from __future__ import annotations
 
 import typing

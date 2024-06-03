@@ -246,6 +246,8 @@ def register_crontask(
 class HealthCheckCron(CronTask):
     """Send a heartbeat signal to better stack to notify that the cron has finished processing."""
 
+    storage_class: ClassVar[type[CronStorage]] = TestStorage
+
     def get_queryset(self, *, batch_size: Optional[int] = None, **kwargs: Any) -> list[int]:
         """Fetch the list of elements to process."""
         return []
