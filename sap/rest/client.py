@@ -42,9 +42,9 @@ class RestClient:
         self.basic_username = basic_username
         self.basic_password = basic_password
 
-    async def get(self, path: str, *, params: typing.Optional[dict[str, typing.Union[str, int]]] = None) -> RestData:
+    async def get(self, path: str, *, params: typing.Optional[dict[str, typing.Union[str, int]]] = None, headers: typing.Optional[dict[str, str]] = None,) -> RestData:
         """Retrieve an object."""
-        return await self.request("GET", path, params=params)
+        return await self.request("GET", path, params=params, headers=headers)
 
     async def post(
         self,
@@ -52,21 +52,40 @@ class RestClient:
         *,
         json: typing.Optional[dict[str, typing.Any]] = None,
         files: typing.Optional[list[tuple[str, tuple[str, bytes, str]]]] = None,
+        headers: typing.Optional[dict[str, str]] = None,
     ) -> RestData:
         """Create an object."""
-        return await self.request("POST", path, json=json, files=files)
+        return await self.request("POST", path, json=json, files=files, headers=headers)
 
-    async def put(self, path: str, *, json: dict[str, typing.Any]) -> RestData:
+    async def put(
+        self,
+        path: str,
+        *,
+        json: dict[str, typing.Any],
+        headers: typing.Optional[dict[str, str]] = None,
+    ) -> RestData:
         """Update an object."""
-        return await self.request("PUT", path, json=json)
+        return await self.request("PUT", path, json=json, headers=headers)
 
-    async def patch(self, path: str, *, json: dict[str, typing.Any]) -> RestData:
+    async def patch(
+        self,
+        path: str,
+        *,
+        json: dict[str, typing.Any],
+        headers: typing.Optional[dict[str, str]] = None,
+    ) -> RestData:
         """Patch an object."""
-        return await self.request("PATCH", path, json=json)
+        return await self.request("PATCH", path, json=json, headers=headers)
 
-    async def delete(self, path: str, *, json: typing.Optional[dict[str, typing.Any]] = None) -> RestData:
+    async def delete(
+        self,
+        path: str,
+        *,
+        json: typing.Optional[dict[str, typing.Any]] = None,
+        headers: typing.Optional[dict[str, str]] = None,
+    ) -> RestData:
         """Remove an object."""
-        return await self.request("DELETE", path, json=json)
+        return await self.request("DELETE", path, json=json, headers=headers)
 
     def _get_client(self) -> httpx.AsyncClient:
         """Get retrieve client with headers."""
@@ -83,12 +102,13 @@ class RestClient:
         json: typing.Optional[dict[str, typing.Any]] = None,
         params: typing.Optional[dict[str, typing.Union[str, int]]] = None,
         files: typing.Optional[list[tuple[str, tuple[str, bytes, str]]]] = None,
+        headers: typing.Optional[dict[str, str]] = None,
     ) -> RestData:
         """Perform an HTTPS request on the Rest API."""
         url: str = path if "://" in path else urllib.parse.urljoin(self.base_url, path)
 
         async with self._get_client() as client:
-            response = await client.request(method, url, json=json, params=params, files=files)
+            response = await client.request(method, url, json=json, params=params, files=files, headers=headers)
 
         print(f"{method} {url} {response}")
         self.response_cache = response
