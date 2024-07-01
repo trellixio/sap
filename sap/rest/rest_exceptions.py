@@ -110,6 +110,13 @@ class Rest409Error(RestAPIError):
     message = "Conflict or duplicate transaction."
 
 
+class Rest412Error(RestAPIError):
+    """Account was suspended for payment issue."""
+
+    code = 412
+    message = "Payment required."
+
+
 class Rest503Error(RestAPIError):
     """The Rest server is down."""
 
