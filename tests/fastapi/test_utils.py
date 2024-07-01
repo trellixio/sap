@@ -57,11 +57,55 @@ def test_pydantic_format_errors(data_input: list["ErrorDict"], data_output: dict
             FormData([("user[names[]]", "John"), ("user[names[]]", "Doe"), ("middle_name", "Moi")]),
             {"user": {"names": ["John", "Doe"]}, "middle_name": "Moi"},
         ),
+        (
+            FormData([("user[name[pos_1]]", "John"), ("user[name[pos_2]]", "Doe"), ("middle_name", "Moi")]),
+            {"user": {"name": {"pos_1": "John", "pos_2": "Doe"}}, "middle_name": "Moi"},
+        ),
     ],
 )
 def test_unflatten_form_data(data_input: typing.Mapping[str, typing.Any], data_output: dict[str, typing.Any]) -> None:
     """Test that output matches func(input)."""
     result = utils.unflatten_form_data(data_input)
+    assert result == data_output
+
+
+@pytest.mark.parametrize(
+    ("on_conflict", "dict_a", "dict_b", "data_output"),
+    [
+        (
+            "override",
+            {"key_1": "John", "key_2": "Doe", "key_3": "Moi"},
+            {"key_2": "Raphael", "key_4": "Sud"},
+            {"key_1": "John", "key_2": "Raphael", "key_3": "Moi", "key_4": "Sud"},
+        ),
+        (
+            "override",
+            {"key_1": "John", "key_2": ["Doe"], "key_3": ["Moi"]},
+            {"key_2": "Raphael", "key_4": "Sud"},
+            {"key_1": "John", "key_2": "Raphael", "key_3": ["Moi"], "key_4": "Sud"},
+        ),
+        (
+            "merge",
+            {"key_1": "John", "key_2": ["Doe"], "key_3": ["Moi"]},
+            {"key_2": "Raphael", "key_4": "Sud"},
+            {"key_1": "John", "key_2": ["Doe", "Raphael"], "key_3": ["Moi"], "key_4": "Sud"},
+        ),
+        (
+            "override",
+            {"key_1": "John", "key_2": {"key_21": "Jacques", "key_22": "Roy"}, "key_3": ["Moi"]},
+            {"key_2": {"key_21": "Xavier"}, "key_4": "Sud"},
+            {"key_1": "John", "key_2": {"key_21": "Xavier", "key_22": "Roy"}, "key_3": ["Moi"], "key_4": "Sud"},
+        ),
+    ],
+)
+def test_merge_dict_deep(
+    on_conflict: str,
+    dict_a: typing.Mapping[str, typing.Any],
+    dict_b: typing.Mapping[str, typing.Any],
+    data_output: dict[str, typing.Any],
+) -> None:
+    """Test that output matches func(input)."""
+    result = utils.merge_dict_deep(dict_a, dict_b, on_conflict=on_conflict)
     assert result == data_output
 
 

@@ -8,7 +8,7 @@ that needs to be re-used but are not a core part of the app logic.
 import base64
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from fastapi import Request
 from fastapi.datastructures import FormData
@@ -85,9 +85,18 @@ def base64_url_decode(text: str) -> str:
     return base64.urlsafe_b64decode(text.encode().ljust(len(text) + len(text) % 4, b"=")).decode()
 
 
-def merge_dict_deep(dict_a: dict[str, Any], dict_b: dict[str, Any], path: Optional[list[str]] = None) -> dict[str, Any]:
+def merge_dict_deep(
+    dict_a: dict[str, Any],
+    dict_b: dict[str, Any],
+    path: Optional[list[str]] = None,
+    on_conflict: Literal["merge", "override"] = "override",
+) -> dict[str, Any]:
     """
     Deep merge dictionaries. Merge b into a.
+
+    on_conflict:
+        - merge: If the same value is present on both list, both value are merge to a list.
+        - override: Use the value of dict_b on conflict
 
     ```python
         a = {1:{"a":{A}}, 2:{"b":{B}}}
@@ -109,7 +118,17 @@ def merge_dict_deep(dict_a: dict[str, Any], dict_b: dict[str, Any], path: Option
             elif dict_a[key] == dict_b[key]:
                 pass  # same leaf value
             else:  # b value is more recent
-                dict_a[key] = dict_b[key]
+                if on_conflict == "merge":
+                    if not isinstance(dict_a[key], list):
+                        dict_a[key] = [dict_a[key]]
+
+                    if isinstance(dict_b[key], list):
+                        dict_a[key] += dict_b[key]
+                    else:
+                        dict_a[key].append(dict_b[key])
+
+                else:
+                    dict_a[key] = dict_b[key]
         else:
             dict_a[key] = dict_b[key]
     return dict_a
@@ -135,17 +154,22 @@ def unflatten_form_data(form_data: FormData[str, Any]) -> FormData[str, Any]:
     ```
     """
     res: dict[str, Any] = {}
-    
+
     for key, value in form_data.multi_items():
         if reg_match := regex_unflatten_dict.match(key):
             key_0, key_1 = reg_match.groups()
             res.setdefault(key_0, {})
-            if reg_match_child := regex_unflatten_list.match(key_1):
-                key_10 = reg_match_child.group(1)
-                res[key_0].setdefault(key_10, [])
-                res[key_0][key_10].append(value)
-            else:
-                res[key_0][key_1] = value
+            res[key_0] = merge_dict_deep(
+                res[key_0],
+                unflatten_form_data(FormData([(key_1, value)])),
+                on_conflict="merge",
+            )
+            # if reg_match_child := regex_unflatten_list.match(key_1):
+            #     key_10 = reg_match_child.group(1)
+            #     res[key_0].setdefault(key_10, [])
+            #     res[key_0][key_10].append(value)
+            # else:
+            #     res[key_0][key_1] = value
         elif reg_match := regex_unflatten_list.match(key):
             key_0 = reg_match.group(1)
             res.setdefault(key_0, [])
