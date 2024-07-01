@@ -42,7 +42,13 @@ class RestClient:
         self.basic_username = basic_username
         self.basic_password = basic_password
 
-    async def get(self, path: str, *, params: typing.Optional[dict[str, typing.Union[str, int]]] = None, headers: typing.Optional[dict[str, str]] = None,) -> RestData:
+    async def get(
+        self,
+        path: str,
+        *,
+        params: typing.Optional[dict[str, typing.Union[str, int]]] = None,
+        headers: typing.Optional[dict[str, str]] = None,
+    ) -> RestData:
         """Retrieve an object."""
         return await self.request("GET", path, params=params, headers=headers)
 

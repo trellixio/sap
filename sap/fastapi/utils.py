@@ -8,7 +8,7 @@ that needs to be re-used but are not a core part of the app logic.
 import base64
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional, Literal
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from fastapi import Request
 from fastapi.datastructures import FormData
