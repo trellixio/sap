@@ -1,0 +1,28 @@
+# Github Action Workflow
+# ----------------------
+# This file helps automate the merging of the main branch to staging.
+
+name: 'Merge to staging'
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: 'staging'
+
+      - name: Fetch all branches
+        run: git fetch --all
+
+      - name: Merge main into staging
+        run: git pull --progress --ff-only origin --no-edit main
+        # run: git pull --progress --no-stat -v origin --no-edit main
+
+      - name: Push staging branch
+        run: git push origin staging
