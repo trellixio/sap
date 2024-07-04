@@ -82,6 +82,13 @@ class Rest401Error(RestAPIError):
     message = "Authentication refused."
 
 
+class Rest402Error(RestAPIError):
+    """Account was suspended for payment issue."""
+
+    code = 402
+    message = "Payment required."
+
+
 class Rest403Error(RestAPIError):
     """Insufficient permission to access the requested data."""
 
@@ -111,10 +118,17 @@ class Rest409Error(RestAPIError):
 
 
 class Rest412Error(RestAPIError):
-    """Account was suspended for payment issue."""
+    """Headers is not fulfilled."""
 
     code = 412
-    message = "Payment required."
+    message = "Precondition failed."
+
+
+class Rest424Error(RestAPIError):
+    """Action depended on another action."""
+
+    code = 424
+    message = "Failed dependency."
 
 
 class Rest503Error(RestAPIError):
