@@ -7,7 +7,7 @@ They run code in response to events which are typically messages sent to a queue
 # mypy: disable-error-code="import-untyped"
 
 import asyncio
-from typing import Any, ClassVar
+from typing import Any, ClassVar, TypedDict
 
 import celery
 import celery.bootsteps
@@ -22,6 +22,14 @@ from sap.loggers import logger
 
 from .packet import SignalPacket
 from .utils import match_amqp_topics
+
+
+class LambdaResponse(TypedDict, total=False):
+    """Normal LambdaTask result format."""
+
+    result: bool
+    error: str
+    data: Any
 
 
 class LambdaTask(celery.Task):  # type: ignore[misc]
@@ -43,11 +51,11 @@ class LambdaTask(celery.Task):  # type: ignore[misc]
         """Return a human-readable name for this lambda."""
         return self.__module__.split(".lambdas", maxsplit=1)[0] + "." + str(self.__name__)
 
-    async def handle_process(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    async def handle_process(self, *args: Any, **kwargs: Any) -> LambdaResponse:
         """Perform pre-check such as authentication and run the task."""
         raise NotImplementedError
 
-    async def test_process(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    async def test_process(self, *args: Any, **kwargs: Any) -> LambdaResponse:
         """Call this method to launch the task in test cases."""
         return await self.handle_process(*args, **kwargs)
 

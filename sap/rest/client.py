@@ -46,7 +46,7 @@ class RestClient:
         self,
         path: str,
         *,
-        params: typing.Optional[dict[str, typing.Union[str, int]]] = None,
+        params: typing.Optional[dict[str, typing.Any]] = None,
         headers: typing.Optional[dict[str, str]] = None,
     ) -> RestData:
         """Retrieve an object."""
