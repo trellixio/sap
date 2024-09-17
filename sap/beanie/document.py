@@ -117,4 +117,3 @@ class Document(beanie.Document):
 
 
 DocT = TypeVar("DocT", bound=Document)
-ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)

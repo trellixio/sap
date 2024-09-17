@@ -14,7 +14,7 @@ from typing import Any
 from sap.loggers import logger
 
 from .crons import CronStat, CronTask
-from .lambdas import LambdaTask
+from .lambdas import LambdaResponse, LambdaTask
 from .packet import SignalPacket  # , RPCPacket
 
 # from .rpc import RPCTask
@@ -32,7 +32,7 @@ class DebugTask:
         assert self.name
         return str(datetime.utcnow())
 
-    async def process(self, *args: Any, **kwargs: Any) -> dict[str, str]:
+    async def process(self, *args: Any, **kwargs: Any) -> LambdaResponse:
         """Mock a task process for debugging."""
         time_now = self.get_queryset()
 
@@ -50,7 +50,7 @@ class DebugTask:
         logger.warning("Running End self.name=%s proc.pid=%d args=%s kwargs=%s time_now=%s", *log_args)
         # raise Exception("I am tired.!")
 
-        return {"result": time_now}
+        return {"result": True, "data": time_now}
 
 
 class DebugCronTask(DebugTask, CronTask):
@@ -66,7 +66,7 @@ class DebugLambdaTask1(DebugTask, LambdaTask):
 
     packet = packet_order
 
-    async def handle_process(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    async def handle_process(self, *args: Any, **kwargs: Any) -> LambdaResponse:
         """Simulate processing of a lambda task."""
         return await self.process(*args, **kwargs)
 
@@ -81,7 +81,7 @@ class DebugLambdaTask2(DebugTask, LambdaTask):
 
     packet = packet_order
 
-    async def handle_process(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    async def handle_process(self, *args: Any, **kwargs: Any) -> LambdaResponse:
         """Simulate processing of a lambda task."""
         return await self.process(*args, **kwargs)
 

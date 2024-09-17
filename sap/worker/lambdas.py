@@ -11,7 +11,7 @@ from typing import Any, ClassVar, TypedDict
 
 import celery
 import celery.bootsteps
-import celery.worker.consumer
+
 import httpx
 import kombu
 from kombu.transport.base import StdChannel  # Channel
@@ -32,7 +32,7 @@ class LambdaResponse(TypedDict, total=False):
     data: Any
 
 
-class LambdaTask(celery.Task):  # type: ignore[misc]
+class LambdaTask(celery.Task):  # type: ignore
     """
     A lambda task is a task that run on a specific event, usually after receiving a packet (message).
 
@@ -70,7 +70,7 @@ def register_lambda(lambda_task_class: type[LambdaTask]) -> LambdaTask:
     return lambda_task_class()
 
 
-class LambdaWorker(celery.bootsteps.ConsumerStep):  # type: ignore[misc]
+class LambdaWorker(celery.bootsteps.ConsumerStep):
     """Celery worker that consumes packets (messages) sent to lambda queues."""
 
     packets: list[SignalPacket] = []
@@ -84,13 +84,13 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):  # type: ignore[misc]
             params = packet.queue_get_params(task_name=self.name, is_fallback=True)
             params["exchange"] = kombu.Exchange(name=params["exchange"], type="topic", channel=channel, durable=True)
             queue_fallback = kombu.Queue(**params, channel=channel)
-            queue_fallback.declare()
+            queue_fallback.declare()  # type: ignore
 
             # declare primary queue
             params = packet.queue_get_params(task_name=self.name, is_fallback=False)
             params["exchange"] = kombu.Exchange(name=params["exchange"], type="topic", channel=channel, durable=True)
             queue_primary = kombu.Queue(**params, channel=channel)
-            queue_primary.declare()
+            queue_primary.declare()  # type: ignore
 
             # only listen to primary queue
             queue_list.append(queue_primary)
@@ -166,16 +166,17 @@ class HealthCheckLambda(LambdaTask):
     packet: SignalPacket = packet_heartbeat
     # heartbeat_url: pydantic.HttpUrl = pydantic.HttpUrl()
 
-    async def handle_process(self, *args: str, **kwargs: Any) -> dict[str, Any]:
+    async def handle_process(self, *args: str, **kwargs: Any) -> LambdaResponse:
         """Perform heartbeat."""
-        await self.heartbeat(self)
+        await self.heartbeat(heartbeat_url=args[0])
         return {"result": True}
 
     async def heartbeat(self, heartbeat_url: str) -> None:
         """Use heartbeat url to notify that everything is up and running as expected."""
+        assert self.packet
 
         async with httpx.AsyncClient() as client:
             response: httpx.Response = await client.head(heartbeat_url)
         assert response.status_code == rest_status.HTTP_200_OK
 
-        await packet_heartbeat.send(heartbeat_url)
+        # await self.packet.send(heartbeat_url)

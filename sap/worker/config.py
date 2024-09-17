@@ -14,7 +14,7 @@ import typing
 # do not remove, forcing update of format for better amqp exchanges structures
 from kombu.pidbox import Mailbox
 
-Mailbox.reply_exchange_fmt = "%s.reply.pidbox"
+Mailbox.reply_exchange_fmt = "%s.reply.pidbox"  # type: ignore
 
 
 class CeleryConfig:

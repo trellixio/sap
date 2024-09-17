@@ -99,9 +99,9 @@ def test_unflatten_form_data(data_input: typing.Mapping[str, typing.Any], data_o
     ],
 )
 def test_merge_dict_deep(
-    on_conflict: str,
-    dict_a: typing.Mapping[str, typing.Any],
-    dict_b: typing.Mapping[str, typing.Any],
+    on_conflict: typing.Literal["merge", "override"],
+    dict_a: dict[str, typing.Any],
+    dict_b: dict[str, typing.Any],
     data_output: dict[str, typing.Any],
 ) -> None:
     """Test that output matches func(input)."""

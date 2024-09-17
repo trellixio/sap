@@ -55,7 +55,7 @@ class CronStat:
     value: int
 
 
-class BaseCronTask(celery.Task):  # type: ignore[misc]
+class BaseCronTask(celery.Task):  # type: ignore
     """Define how cron task classes should be structured."""
 
     expires = 60 * 60  # automatically expires if not run within 1 hour

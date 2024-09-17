@@ -50,16 +50,16 @@ class BeanieClient:
         :force bool: Use it for force a connection initialization
         """
 
-        if "default" in cls.connections and not force:
-            database: AsyncIOMotorDatabase = cls.connections["default"].database
+        # if "default" in cls.connections and not force:
+        #     database: AsyncIOMotorDatabase = cls.connections["default"].database
 
-            try:
-                await database.command("ping")
-            except pymongo.errors.ConnectionFailure:
-                logger.debug("--> Invalidate existing MongoDB connection")
-            else:
-                logger.debug("--> Using existing MongoDB connection")
-                return
+        #     try:
+        #         await database.command("ping")
+        #     except pymongo.errors.ConnectionFailure:
+        #         logger.debug("--> Invalidate existing MongoDB connection")
+        #     else:
+        #         logger.debug("--> Using existing MongoDB connection")
+        #         return
 
         client = AsyncIOMotorClient(mongo_params.get_dns())
         # if hijack_motor_loop:

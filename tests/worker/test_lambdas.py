@@ -10,6 +10,7 @@ from AppMain.settings import AppSettings
 from sap.beanie.client import BeanieClient
 from sap.settings import SapSettings
 from sap.worker import AMQPClient, LambdaTask, LambdaWorker, SignalPacket, register_lambda
+from sap.worker.lambdas import LambdaResponse
 from tests.samples import DummyDoc
 
 AMQPClient.db_params = AppSettings.RABBITMQ
@@ -22,7 +23,7 @@ class DummyLambdaTask(LambdaTask):
 
     packet = SignalPacket("sap_tests.app.*.user.created", providing_args=["identifier", "timestamp"])
 
-    async def handle_process(self, *args: str, **kwargs: typing.Any) -> dict[str, typing.Any]:
+    async def handle_process(self, *args: str, **kwargs: typing.Any) -> LambdaResponse:
         await BeanieClient.init(mongo_params=AppSettings.MONGO, document_models=[DummyDoc])
         doc = await DummyDoc(num=kwargs["timestamp"], name="lambda task run").create()
         assert doc.id, "DummyDoc has not been created"
@@ -58,7 +59,7 @@ def fixture_setup_celery_app(celery_app: celery.Celery) -> bool:
 
 
 @pytest.mark.asyncio
-async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worker.WorkController) -> None:
+async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worker.WorkController) -> None:  # type: ignore
     """Create dummy lambda worker to ensure that LambdaWorker class is functioning."""
     assert setup_celery_app and celery_worker
 
