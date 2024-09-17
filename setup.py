@@ -35,7 +35,6 @@ setup(
         "fastAPI~=0.105",
         "itsdangerous~=2.1",
         "beanie~=1.26",
-        "SQLAlchemy~=2.0",
         "passlib~=1.7",
         "motor~=3.3",
         "typing-extensions~=4.9",

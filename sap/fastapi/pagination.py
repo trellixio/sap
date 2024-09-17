@@ -31,8 +31,9 @@ class CursorInfo:
     limit_max: int = 250
     sort: str = "-doc_meta.created"
 
-    def __init__(self, request: Request) -> None:
+    def __init__(self, request: Request, sort: str = "-doc_meta.created") -> None:
         """Initialize the cursor info."""
+        self.sort = request.query_params.get("sort", sort)
         self.limit = int(request.query_params.get("limit", self.limit))
         cursor_str = request.query_params.get("cursor", "")
         try:

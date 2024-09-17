@@ -1,6 +1,10 @@
 import pydantic
 from typing import TypeVar, Union
-from sqlalchemy.orm import DeclarativeBase
+
+try:
+    from sqlalchemy.orm import DeclarativeBase
+except ImportError: 
+    from pydantic import BaseModel as DeclarativeBase
 
 
 AlchemyModelT = TypeVar("AlchemyModelT", bound=DeclarativeBase)

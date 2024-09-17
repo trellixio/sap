@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import datetime
 import inspect
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, TypeVar, Union, get_args, get_origin
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Sequence, TypeVar, Union, get_args, get_origin
 
 from typing_extensions import Literal
 
@@ -31,11 +31,19 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
     @classmethod
     def get_id(cls, instance: AlchemyOrPydanticModelT) -> str:
-        """Return the Mongo ID of the object."""
+        """Return the ID of the object."""
         if isinstance(instance, Document):
             return str(instance.id)
 
         raise NotImplementedError
+
+    @classmethod
+    def get_object(cls, instance: AlchemyOrPydanticModelT) -> str:
+        """Return the type of the object."""
+        if hasattr(cls, "object"):
+            return cls.object
+
+        return instance.__class__.__name__.lower()
 
     @classmethod
     def get_created(cls, instance: AlchemyOrPydanticModelT) -> datetime.datetime:
@@ -102,7 +110,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
     @classmethod
     def read_list(
-        cls: type["SerializerT"], instance_list: list[AlchemyOrPydanticModelT], exclude: Optional["IncEx"] = None
+        cls: type["SerializerT"], instance_list: Sequence[AlchemyOrPydanticModelT], exclude: Optional["IncEx"] = None
     ) -> list["SerializerT"]:
         """Serialize a list of objects."""
         return [cls.read(instance, exclude=exclude) for instance in instance_list]
@@ -110,7 +118,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     @classmethod
     def read_page(
         cls,
-        instance_list: list[AlchemyOrPydanticModelT],
+        instance_list: Sequence[AlchemyOrPydanticModelT],
         cursor_info: CursorInfo,
         request: Request,
     ) -> PaginatedData["SerializerT"]:
