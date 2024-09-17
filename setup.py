@@ -10,7 +10,7 @@ long_description = (this_directory / "README.md").read_text()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-VERSION = "0.2.18"
+VERSION = "0.3.0"
 
 setup(
     name="sapx",
@@ -24,7 +24,7 @@ setup(
     url="https://github.com/trellixio/sap",
     author="Trellix Dev",
     author_email="contact@trellix.io",
-    python_requires=">=3.9",
+    python_requires=">=3.12",
     install_requires=[
         "aioamqp~=0.15",
         "httpx~=0.26",
@@ -34,10 +34,10 @@ setup(
         "PyJWT~=2.8",
         "fastAPI~=0.105",
         "itsdangerous~=2.1",
-        "beanie~=1.23",
+        "beanie~=1.26",
+        "SQLAlchemy~=2.0",
         "passlib~=1.7",
         "motor~=3.3",
-        # "sqlmodel~=0.0",
         "typing-extensions~=4.9",
         "PyYAML~=6.0",
     ],
@@ -47,7 +47,7 @@ setup(
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.12",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     ],
