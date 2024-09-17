@@ -11,7 +11,7 @@ from typing import Any, Generic, Optional
 import pydantic
 from fastapi import Request
 
-from sap.beanie.document import DocT
+from sap.sqlachemy import AlchemyOrPydanticModelT
 
 from .exceptions import Validation422Error
 from .serializers import SerializerT, WSerializerT
@@ -31,7 +31,7 @@ async def validate_form(
     request: Request,
     serializer_write_class: type[WSerializerT],
     serializer_read_class: Optional[type[SerializerT]] = None,
-    instance: Optional[DocT] = None,
+    instance: Optional[AlchemyOrPydanticModelT] = None,
 ) -> FormValidation[WSerializerT]:
     """Check that a submitted form pass validation."""
     form_data: dict[str, Any] = {}

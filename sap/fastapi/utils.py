@@ -8,7 +8,7 @@ that needs to be re-used but are not a core part of the app logic.
 import base64
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Mapping, Optional
 
 from fastapi import Request
 from fastapi.datastructures import FormData
@@ -138,7 +138,7 @@ regex_unflatten_dict = re.compile(r"(?P<key_parent>\w+)\[(?P<key_child>[\w\[\]]+
 regex_unflatten_list = re.compile(r"(?P<key_parent>\w+)\[\]")
 
 
-def unflatten_form_data(form_data: FormData[str, Any]) -> FormData[str, Any]:
+def unflatten_form_data(form_data: FormData | Mapping[str, Any]) -> dict[str, Any]:
     """
     Un-flatten a form data and return the corresponding cascading dict.
 
@@ -155,7 +155,8 @@ def unflatten_form_data(form_data: FormData[str, Any]) -> FormData[str, Any]:
     """
     res: dict[str, Any] = {}
 
-    for key, value in form_data.multi_items():
+    items = form_data.multi_items() if isinstance(form_data, FormData) else form_data.items()
+    for key, value in items:
         if reg_match := regex_unflatten_dict.match(key):
             key_0, key_1 = reg_match.groups()
             res.setdefault(key_0, {})

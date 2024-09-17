@@ -16,7 +16,8 @@ from fastapi import Request
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 
-from sap.beanie.document import DocT, Document, ModelT
+from sap.beanie.document import Document
+from sap.sqlachemy import AlchemyOrPydanticModelT
 from sap.typing import UnionType
 
 from .pagination import CursorInfo, PaginatedData
@@ -25,11 +26,11 @@ if TYPE_CHECKING:
     from pydantic.main import IncEx
 
 
-class ObjectSerializer(BaseModel, Generic[ModelT]):
+class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     """Serialize an object for retrieve or list."""
 
     @classmethod
-    def get_id(cls, instance: ModelT) -> str:
+    def get_id(cls, instance: AlchemyOrPydanticModelT) -> str:
         """Return the Mongo ID of the object."""
         if isinstance(instance, Document):
             return str(instance.id)
@@ -37,7 +38,7 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
         raise NotImplementedError
 
     @classmethod
-    def get_created(cls, instance: ModelT) -> datetime.datetime:
+    def get_created(cls, instance: AlchemyOrPydanticModelT) -> datetime.datetime:
         """Return the user creation date."""
         if isinstance(instance, Document):
             assert instance.doc_meta.created  # let mypy know that this cannot be null
@@ -46,7 +47,7 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
         raise NotImplementedError
 
     @classmethod
-    def get_updated(cls, instance: ModelT) -> datetime.datetime:
+    def get_updated(cls, instance: AlchemyOrPydanticModelT) -> datetime.datetime:
         """Return the user creation date."""
         if isinstance(instance, Document):
             assert instance.doc_meta.updated  # let mypy know that this cannot be null
@@ -54,7 +55,7 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
         raise NotImplementedError
 
     @classmethod
-    def _get_instance_data(cls, instance: ModelT, exclude: Optional["IncEx"] = None) -> dict[str, Any]:
+    def _get_instance_data(cls, instance: AlchemyOrPydanticModelT, exclude: Optional["IncEx"] = None) -> dict[str, Any]:
         """Retrieve the serializer value from the instance and getters."""
 
         def _get_field_value(field_name: str, field_info: FieldInfo) -> Any:
@@ -93,13 +94,15 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
         return data
 
     @classmethod
-    def read(cls: type["SerializerT"], instance: ModelT, exclude: Optional["IncEx"] = None) -> "SerializerT":
+    def read(
+        cls: type["SerializerT"], instance: AlchemyOrPydanticModelT, exclude: Optional["IncEx"] = None
+    ) -> "SerializerT":
         """Serialize a single object instance."""
         return cls(**cls._get_instance_data(instance, exclude=exclude))
 
     @classmethod
     def read_list(
-        cls: type["SerializerT"], instance_list: list[ModelT], exclude: Optional["IncEx"] = None
+        cls: type["SerializerT"], instance_list: list[AlchemyOrPydanticModelT], exclude: Optional["IncEx"] = None
     ) -> list["SerializerT"]:
         """Serialize a list of objects."""
         return [cls.read(instance, exclude=exclude) for instance in instance_list]
@@ -107,7 +110,7 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
     @classmethod
     def read_page(
         cls,
-        instance_list: list[ModelT],
+        instance_list: list[AlchemyOrPydanticModelT],
         cursor_info: CursorInfo,
         request: Request,
     ) -> PaginatedData["SerializerT"]:
@@ -125,10 +128,10 @@ class ObjectSerializer(BaseModel, Generic[ModelT]):
 SerializerT = TypeVar("SerializerT", bound=ObjectSerializer[Any])
 
 
-class WriteObjectSerializer(BaseModel, Generic[DocT]):
+class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     """Serialize an object for create or update."""
 
-    instance: Optional[DocT] = None
+    instance: Optional[AlchemyOrPydanticModelT] = None
     embedded_serializers: ClassVar[dict[str, type["WriteObjectSerializer[Any]"]]] = {}
 
     def __init__(self, **data: Any) -> None:
@@ -142,7 +145,7 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
         """Check that data pass DB validation."""
 
         # Automatically run async validators on embedded serializers
-        field_serializer: WriteObjectSerializer[DocT]
+        field_serializer: WriteObjectSerializer[AlchemyOrPydanticModelT]
         for field_name in self.embedded_serializers:
             if field_serializer := getattr(self, field_name):
                 if self.instance:
@@ -153,14 +156,16 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
         self,
         *,
         mode: Literal["json", "python"] | str = "python",
-        include: Optional["IncEx"] = None,
-        exclude: Optional["IncEx"] = None,
+        include: IncEx | None = None,
+        exclude: IncEx | None = None,
+        context: Any | None = None,
         by_alias: bool = False,
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
         round_trip: bool = False,
-        warnings: bool = True,
+        warnings: bool | Literal["none", "warn", "error"] = True,
+        serialize_as_any: bool = False,
     ) -> dict[str, Any]:
         """Dump the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
@@ -182,12 +187,14 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
             mode=mode,
             include=include,
             exclude=exclude,
+            context=context,
             by_alias=by_alias,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
             round_trip=round_trip,
             warnings=warnings,
+            serialize_as_any=serialize_as_any,
         )
 
         # for field_name in exclude_doc_dumps:
@@ -204,20 +211,24 @@ class WriteObjectSerializer(BaseModel, Generic[DocT]):
 
         return result
 
-    async def create(self, **kwargs: Any) -> DocT:
+    async def create(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Create the object in the database using the data extracted by the serializer."""
-        instance_class: Optional[type[Any]] = self.model_fields["instance"].annotation
-        assert instance_class and issubclass(instance_class, Document)
-        self.instance = await instance_class(**self.model_dump()).create()
-        return self.instance
+        instance_class: type[AlchemyOrPydanticModelT] | None = self.model_fields["instance"].annotation
+        if instance_class and issubclass(instance_class, Document):
+            return await instance_class(**self.model_dump()).create()
+        raise NotImplementedError
 
-    async def update(self, **kwargs: Any) -> DocT:
+    async def update(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Update the object in the database using the data extracted by the serializer."""
         assert self.instance
-        instance: DocT = self.instance.model_copy(update=self.model_dump())
-        await instance.save()
-        self.instance = instance
-        return instance
+
+        if isinstance(self.instance, Document):
+            self.instance = self.instance.model_copy(update=self.model_dump())
+            assert self.instance and isinstance(self.instance, Document)
+            await self.instance.save()
+            return self.instance
+
+        raise NotImplementedError
 
 
 WSerializerT = TypeVar("WSerializerT", bound=WriteObjectSerializer[Any])
