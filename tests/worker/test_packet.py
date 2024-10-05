@@ -49,14 +49,14 @@ async def test_signal_packet_queue_declaration() -> None:
     await packet.queue_declare(task_name=task_name)
 
     # Ensure that the queues have been created and binding successfully
-    await packet.connection_reset()
+    await packet.connection_close()
     channel = await packet.get_default_channel()
     await check_queue_exits(channel, queue_primary_name, result=True)
     await check_queue_exits(channel, queue_fallback_name, result=True)
 
-    # Other: Test that reset connection works when channel is already closed
+    # Other: Test that closing connection works when channel is already closed
     await channel.close()
-    await packet.connection_reset()
+    await packet.connection_close()
 
 
 @pytest.mark.asyncio

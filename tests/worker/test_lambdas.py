@@ -77,6 +77,9 @@ async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worke
     await packet_yes.send(identifier, timestamp=timestamp + 3)
     await packet_no.send(identifier, timestamp=timestamp + 4)
 
+    await packet_yes.connection_close()
+    await packet_no.connection_close()
+
     await asyncio.sleep(3)
 
     assert timestamp + 1 in DummyLambdaTask.results

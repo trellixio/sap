@@ -61,7 +61,7 @@ class _Packet:
         return cls.connections["default"]
 
     @classmethod
-    async def connection_reset(cls) -> None:
+    async def connection_close(cls) -> None:
         channel = await cls.get_default_channel()
         if channel.is_open:
             await channel.close()
@@ -140,6 +140,7 @@ class SignalPacket(_Packet):
             routing_key=self.topic,
             properties={"content_type": "application/json"},
         )
+        # await self.connection_close()
 
     def queue_get_name(self, task_name: str, is_fallback: bool = False) -> str:
         """
