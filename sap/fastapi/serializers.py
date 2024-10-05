@@ -1,3 +1,5 @@
+# pylint: disable=too-many-locals
+
 """
 # Serializers.
 
@@ -41,7 +43,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     def get_object(cls, instance: AlchemyOrPydanticModelT) -> str:
         """Return the type of the object."""
         if hasattr(cls, "object"):
-            return cls.object
+            return str(cls.object)
 
         return instance.__class__.__name__.lower()
 

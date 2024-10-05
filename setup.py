@@ -1,4 +1,5 @@
 """Python setup file."""
+
 import os
 from pathlib import Path
 
@@ -27,17 +28,18 @@ setup(
     python_requires=">=3.12",
     install_requires=[
         "aioamqp~=0.15",
-        "httpx~=0.26",
-        "redis~=5.0",
-        "celery~=5.3",
-        "pydantic~=2.5",
-        "PyJWT~=2.8",
-        "fastAPI~=0.105",
-        "itsdangerous~=2.1",
+        "httpx~=0.27",
+        "redis~=5.1",
+        "celery~=5.4",
+        "pydantic~=2.9",
+        "PyJWT~=2.9",
+        "fastapi~=0.115",
+        "itsdangerous~=2.2",
         "beanie~=1.26",
         "passlib~=1.7",
-        "motor~=3.3",
-        "typing-extensions~=4.9",
+        "motor~=3.6",
+        "pymongo~=4.9",
+        "typing-extensions~=4.12",
         "PyYAML~=6.0",
     ],
     classifiers=[

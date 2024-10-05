@@ -1,3 +1,5 @@
+# pylint: disable=too-many-ancestors
+
 """
 Samples.
 
@@ -9,7 +11,7 @@ import typing
 import pydantic
 
 from sap.beanie import Document
-from sap.fastapi.serializers import ObjectSerializer, WriteObjectSerializer
+from sap.fastapi.serializers import ObjectSerializer
 
 
 class EmbeddedDummyDoc(pydantic.BaseModel):

@@ -49,6 +49,7 @@ class _Settings(pydantic_settings.BaseSettings):
     """
 
     model_config = pydantic_settings.SettingsConfigDict(
+        extra="ignore",
         env_file=os.getenv("APP_DOTENV", ".env"),
         env_file_encoding="utf-8",
         env_prefix="APP_SETTINGS_",

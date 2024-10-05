@@ -5,7 +5,7 @@ import pydantic
 try:
     from sqlalchemy.orm import DeclarativeBase
 except ImportError:
-    from pydantic import BaseModel as DeclarativeBase
+    from pydantic import BaseModel as DeclarativeBase  # type: ignore
 
 
 AlchemyModelT = TypeVar("AlchemyModelT", bound=DeclarativeBase)
