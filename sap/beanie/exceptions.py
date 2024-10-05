@@ -3,6 +3,7 @@ Exceptions.
 
 Group exceptions specific to database error such as ObjectNotFound or IntegrityError
 """
+
 from fastapi.exceptions import HTTPException
 
 

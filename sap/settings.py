@@ -1,4 +1,5 @@
 """Settings utils."""
+
 import os
 
 import pydantic

@@ -3,6 +3,7 @@ Auth.
 
 Utils to handle user authentication and permissions.
 """
+
 from __future__ import annotations
 
 import base64

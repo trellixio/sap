@@ -3,6 +3,7 @@ Test Crons.
 
 Test xlib.tasks utilities.
 """
+
 from typing import Any, Callable, ClassVar, Optional
 
 import celery.schedules

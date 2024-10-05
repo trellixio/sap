@@ -4,7 +4,6 @@
 Known exceptions that can occur while using the app.
 """
 
-
 import typing
 
 import httpx

@@ -3,6 +3,7 @@ AMQP.
 
 Establish connection to an AMQP server such as RabbitMQ.
 """
+
 import asyncio
 
 import aioamqp

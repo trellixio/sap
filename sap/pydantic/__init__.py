@@ -3,6 +3,7 @@ Pydantic.
 
 This package regroups all common helpers to work with Pydantic
 """
+
 from datetime import datetime, timezone
 from typing import TypeVar
 

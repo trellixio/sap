@@ -11,7 +11,6 @@ from typing import Any, ClassVar, TypedDict
 
 import celery
 import celery.bootsteps
-
 import httpx
 import kombu
 from kombu.transport.base import StdChannel  # Channel

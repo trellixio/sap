@@ -5,6 +5,7 @@ This is MAIN entrypoint to the application.
 It exposes the ASGI callable as a module-level variable named ``app``.
 
 """
+
 import logging
 import typing
 from contextlib import asynccontextmanager

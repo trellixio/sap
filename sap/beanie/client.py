@@ -3,6 +3,7 @@ Beanie Client.
 
 Initialize connection to the Mongo Database.
 """
+
 from __future__ import annotations
 
 import asyncio

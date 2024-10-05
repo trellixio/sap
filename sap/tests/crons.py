@@ -3,6 +3,7 @@ Test Crons.
 
 Helpers to make it easier to create test cases for crons.
 """
+
 import typing
 
 import beanie

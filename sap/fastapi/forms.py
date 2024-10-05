@@ -4,7 +4,6 @@ Helpers for views.
 Helpers methods used in app.views.
 """
 
-
 from dataclasses import dataclass
 from typing import Any, Generic, Optional
 

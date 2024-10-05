@@ -3,6 +3,7 @@ Link.
 
 Update beanie link with better object mapping.
 """
+
 from __future__ import annotations
 
 from typing import Optional, Type

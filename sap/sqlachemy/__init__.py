@@ -1,9 +1,10 @@
-import pydantic
 from typing import TypeVar, Union
+
+import pydantic
 
 try:
     from sqlalchemy.orm import DeclarativeBase
-except ImportError: 
+except ImportError:
     from pydantic import BaseModel as DeclarativeBase
 
 

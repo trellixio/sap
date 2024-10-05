@@ -4,6 +4,7 @@
 This module contains generic middleware to perform repetitive actions on each request.
 Learn more: https://fastapi.tiangolo.com/tutorial/middleware/
 """
+
 from __future__ import annotations
 
 import traceback

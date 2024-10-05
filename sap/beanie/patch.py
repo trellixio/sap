@@ -1,4 +1,5 @@
 """Patch used for overload Beanie."""
+
 # mypy: ignore-errors
 
 from typing import Any, List, Optional, Union, get_args, get_origin
