@@ -122,6 +122,7 @@ add-ignore = ['D202']
 testpaths = "tests"
 asyncio_mode = "auto"
 addopts = '--cov=sap --cov-fail-under=100 --no-cov-on-fail'
+asyncio_default_fixture_loop_scope = "session"
 
 [tool.coverage.run]
 branch = true

@@ -18,7 +18,7 @@ from AppMain.settings import AppSettings
 from sap.tests.utils import generate_random_string
 from tests.samples import DummyDoc, EmbeddedDummyDoc
 
-pytest_plugins = ("celery.contrib.pytest",)
+# pytest_plugins = ("celery.contrib.pytest",)
 
 # @pytest.fixture(scope="session")
 # def event_loop() -> typing.Generator[asyncio.events.AbstractEventLoop, None, None]:
