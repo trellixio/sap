@@ -5,8 +5,9 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
-this_directory = Path(__file__).parent
-long_description = (this_directory / "README.md").read_text()
+# this_directory = Path(__file__).parent
+# long_description = (this_directory / "README.md").read_text()
+long_description = "Library of re-usable utilities for python web apps."
 
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
