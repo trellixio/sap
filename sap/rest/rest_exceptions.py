@@ -74,6 +74,13 @@ class Rest400Error(RestAPIError):
     message = "Invalid data"
 
 
+class Rest422Error(RestAPIError):
+    """Data validation failed."""
+
+    code = 422
+    message = "Data validation failed."
+
+
 class Rest401Error(RestAPIError):
     """Access token declined."""
 

@@ -10,7 +10,20 @@ from __future__ import annotations
 
 import datetime
 import inspect
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, List, Optional, Sequence, TypeVar, Union, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Generic,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    overload,
+)
 
 from typing_extensions import Literal
 
@@ -26,6 +39,7 @@ from .pagination import CursorInfo, PaginatedData
 
 if TYPE_CHECKING:
     from pydantic.main import IncEx
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
@@ -151,6 +165,11 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
             if inspect.isclass(field_info.annotation) and issubclass(field_info.annotation, WriteObjectSerializer):
                 self.embedded_serializers[field_name] = field_info.annotation
 
+    @overload
+    async def run_async_validators(self, db: "AsyncSession", **kwargs: Any) -> None:
+        """run_async_validators overload for sqlachemy app using db."""
+        ...
+
     async def run_async_validators(self, **kwargs: Any) -> None:
         """Check that data pass DB validation."""
 
@@ -221,12 +240,22 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
         return result
 
+    @overload
+    async def create(self, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
+        """create overload for sqlachemy app using db."""
+        ...
+
     async def create(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Create the object in the database using the data extracted by the serializer."""
         instance_class: type[AlchemyOrPydanticModelT] | None = self.model_fields["instance"].annotation
         if instance_class and issubclass(instance_class, Document):
             return await instance_class(**self.model_dump()).create()
         raise NotImplementedError
+
+    @overload
+    async def update(self, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
+        """update overload for sqlachemy app using db."""
+        ...
 
     async def update(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Update the object in the database using the data extracted by the serializer."""

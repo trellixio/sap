@@ -28,7 +28,7 @@ from sap.beanie.document import Document
 from sap.beanie.exceptions import Object404Error
 
 UserT = TypeVar("UserT", bound=Document)
-UserViewT: typing_extensions.TypeAlias = Union[Document, BaseModel]
+UserViewT: typing_extensions.TypeAlias = Union[Document, BaseModel, object]
 
 
 class JWTAuth:
