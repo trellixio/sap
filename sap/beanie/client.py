@@ -67,5 +67,5 @@ class BeanieClient:
         client.get_io_loop = asyncio.get_running_loop  # type: ignore
         database = client[mongo_params.db]
         cls.connections["default"] = MongoConnection(client=client, database=database)
-        await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=True)  # type: ignore
+        await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=True)
         logger.info("--> Establishing new MongoDB connection")

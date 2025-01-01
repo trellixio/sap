@@ -155,7 +155,7 @@ SerializerT = TypeVar("SerializerT", bound=ObjectSerializer[Any])
 class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     """Serialize an object for create or update."""
 
-    instance: Optional[AlchemyOrPydanticModelT] = None
+    _instance: Optional[AlchemyOrPydanticModelT] = None
     embedded_serializers: ClassVar[dict[str, type["WriteObjectSerializer[Any]"]]] = {}
 
     def __init__(self, **data: Any) -> None:
@@ -166,7 +166,7 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
                 self.embedded_serializers[field_name] = field_info.annotation
 
     @overload
-    async def run_async_validators(self, db: "AsyncSession", **kwargs: Any) -> None:
+    async def run_async_validators(self, *, db: "AsyncSession", **kwargs: Any) -> None:
         """run_async_validators overload for sqlachemy app using db."""
         ...
 
@@ -177,8 +177,8 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         field_serializer: WriteObjectSerializer[AlchemyOrPydanticModelT]
         for field_name in self.embedded_serializers:
             if field_serializer := getattr(self, field_name):
-                if self.instance:
-                    field_serializer.instance = getattr(self.instance, field_name)
+                if self._instance:
+                    field_serializer._instance = getattr(self._instance, field_name)
                 await field_serializer.run_async_validators(**kwargs)
 
     def model_dump(
@@ -198,10 +198,9 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     ) -> dict[str, Any]:
         """Dump the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
-        if exclude:
-            exclude.add("instance")  # type: ignore
-        else:
-            exclude = {"instance"}
+        exclude = exclude or set()
+        exclude.add("instance")  # type: ignore
+        exclude.add("_instance")  # type: ignore
 
         # # Some fields are only excluded from being cascade dumps to dict,
         # # but their original value is still needed
@@ -233,7 +232,7 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         for field_name, field_model in self.embedded_serializers.items():
             if not result[field_name]:
                 continue
-            if instance_embedded := getattr(self.instance, field_name, None):
+            if instance_embedded := getattr(self._instance, field_name, None):
                 result[field_name] = instance_embedded.model_copy(update=result[field_name])
             else:
                 result[field_name] = field_model(**result[field_name])
@@ -241,31 +240,31 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         return result
 
     @overload
-    async def create(self, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
+    async def create(self, *, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
         """create overload for sqlachemy app using db."""
         ...
 
     async def create(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Create the object in the database using the data extracted by the serializer."""
-        instance_class: type[AlchemyOrPydanticModelT] | None = self.model_fields["instance"].annotation
+        instance_class: type[AlchemyOrPydanticModelT] | None = self.model_fields["_instance"].annotation
         if instance_class and issubclass(instance_class, Document):
             return await instance_class(**self.model_dump()).create()
         raise NotImplementedError
 
     @overload
-    async def update(self, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
+    async def update(self, *, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
         """update overload for sqlachemy app using db."""
         ...
 
     async def update(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Update the object in the database using the data extracted by the serializer."""
-        assert self.instance
+        assert self._instance
 
-        if isinstance(self.instance, Document):
-            self.instance = self.instance.model_copy(update=self.model_dump())
-            assert self.instance and isinstance(self.instance, Document)
-            await self.instance.save()
-            return self.instance
+        if isinstance(self._instance, Document):
+            self._instance = self._instance.model_copy(update=self.model_dump())
+            assert self._instance and isinstance(self._instance, Document)
+            await self._instance.save()
+            return self._instance
 
         raise NotImplementedError
 

@@ -29,7 +29,7 @@ from tests.samples import DummyDoc, EmbeddedDummyDoc
 
 
 class CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
-    def new_event_loop(self):
+    def new_event_loop(self) -> asyncio.AbstractEventLoop:
         loop = super().new_event_loop()
         # You can customize the loop here if needed
         # For example, set a custom exception handler:
@@ -38,7 +38,7 @@ class CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
 
 
 @pytest.fixture(scope="session")
-def event_loop_policy():
+def event_loop_policy() -> asyncio.DefaultEventLoopPolicy:
     return CustomEventLoopPolicy()
 
 
