@@ -158,6 +158,16 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     _instance: Optional[AlchemyOrPydanticModelT] = None
     embedded_serializers: ClassVar[dict[str, type["WriteObjectSerializer[Any]"]]] = {}
 
+    @property
+    def instance(self) -> Optional[AlchemyOrPydanticModelT]:
+        """Get the instance."""
+        return self._instance
+
+    @instance.setter
+    def instance(self, instance: AlchemyOrPydanticModelT) -> None:
+        """Set the instance."""
+        self._instance = instance
+
     def __init__(self, **data: Any) -> None:
         """Override init to filter embedded serializers."""
         super().__init__(**data)
