@@ -6,7 +6,6 @@ Airtable makes it easy to visualized data.
 """
 
 import json
-from datetime import datetime
 from typing import ClassVar, Optional
 
 import pyairtable.api

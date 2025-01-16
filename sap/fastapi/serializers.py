@@ -179,12 +179,10 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     @overload
     async def run_async_validators(self, *, db: "AsyncSession", **kwargs: Any) -> None:
         """run_async_validators overload for sqlachemy app using db."""
-        ...
 
     @overload
     async def run_async_validators(self, **kwargs: Any) -> None:
         """run_async_validators overload for sqlachemy app using db."""
-        ...
 
     async def run_async_validators(self, **kwargs: Any) -> None:
         """Check that data pass DB validation."""
@@ -258,12 +256,10 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     @overload
     async def create(self, *, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
         """create overload for sqlachemy app using db."""
-        ...
 
     @overload
     async def create(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """create overload for sqlachemy app using db."""
-        ...
 
     async def create(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Create the object in the database using the data extracted by the serializer."""
@@ -275,12 +271,10 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     @overload
     async def update(self, *, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
         """update overload for sqlachemy app using db."""
-        ...
 
     @overload
     async def update(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """update overload for sqlachemy app using db."""
-        ...
 
     async def update(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Update the object in the database using the data extracted by the serializer."""
