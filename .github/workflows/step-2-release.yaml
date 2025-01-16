@@ -1,0 +1,27 @@
+# Github Action Workflow
+# ----------------------
+# This file helps automate the merging of the main branch to staging.
+
+name: 'Merge to release'
+
+on:
+  push:
+    branches: [staging]
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: 'release'
+
+      - name: Fetch all branches
+        run: git fetch --all
+
+      - name: Merge staging into release
+        run: git pull --progress --ff-only origin --no-edit staging
+
+      - name: Push release branch
+        run: git push origin release
