@@ -109,3 +109,4 @@ pytest
 
 # Todo
 
+- Test auto release
