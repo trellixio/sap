@@ -116,7 +116,7 @@ class RestClient:
         async with self._get_client() as client:
             response = await client.request(method, url, json=json, params=params, files=files, headers=headers)
 
-        print(f"{method} {url} {response}")
+        logger.debug("%s, %s, %s", method, url, response)
         self.response_cache = response
         return await self.get_response_data(response)
 
