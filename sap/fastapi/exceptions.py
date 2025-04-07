@@ -6,8 +6,6 @@ Group common logic exceptions such as ValidationError
 
 from fastapi import HTTPException, status
 
-from sap.beanie.exceptions import Object404Error
-
 
 class HTTPError(HTTPException):
     """Subclassing HTTPException."""
@@ -34,8 +32,36 @@ class Validation400Error(HTTPError):
     detail: str = "The data submitted has been rejected."
 
 
+class Permission403Error(HTTPError):
+    """Not enough permission to access resource."""
+
+    status_code: int = status.HTTP_403_FORBIDDEN
+    detail: str = "Not enough permission to access resource."
+
+
+class Object404Error(HTTPError):
+    """Raise when querying DB returns empty result."""
+
+    status_code: int = 404
+    detail: str = "Object not found"
+
+class Cache404Error(HTTPError):
+    """Raise when querying cache returns empty result."""
+
+    status_code: int = 404
+    detail: str = "Object not found in cache"
+
+
+class Duplicate409Error(HTTPError):
+    """A duplication unique transaction id."""
+
+    status_code: int = 409
+    detail: str = "Duplicate transaction."
+
+
 __all__ = [
     "Object404Error",
     "Validation400Error",
     "Validation422Error",
+    "Permission403Error",
 ]
