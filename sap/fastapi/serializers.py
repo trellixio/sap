@@ -51,9 +51,28 @@ if TYPE_CHECKING:
 class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     """Serialize an object for retrieve or list."""
 
+    serializer_metadata: ClassVar[dict[str, Any]] = {}
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        """Initialize metadata about getter methods."""
+        super().__init_subclass__(**kwargs)
+
+        # Analyze all get_* methods
+        for name, method in cls.__dict__.items():
+            if name.startswith("get_") and callable(method):
+                # Check if the method accepts context
+                if "context" in method.__code__.co_varnames:
+                    cls.serializer_metadata[name] = {"accepts_context": True}
+                else:
+                    cls.serializer_metadata[name] = {"accepts_context": False}
+
     @classmethod
     def get_id(cls, instance: AlchemyOrPydanticModelT) -> str:
         """Return the ID of the object."""
+        if hasattr(instance, "public_id"):
+            return str(instance.public_id)
+
         if isinstance(instance, (Document, DeclarativeBase)):
             return str(instance.id)  # type: ignore
 
@@ -85,15 +104,23 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         raise NotImplementedError
 
     @classmethod
-    def _get_instance_data(cls, instance: AlchemyOrPydanticModelT, exclude: Optional["IncEx"] = None) -> dict[str, Any]:
+    def _get_instance_data(
+        cls,
+        instance: AlchemyOrPydanticModelT,
+        exclude: Optional["IncEx"] = None,
+        context: dict[str | Any] | None = None,
+    ) -> dict[str, Any]:
         """Retrieve the serializer value from the instance and getters."""
+        context = context or {}
 
         def _get_field_value(field_name: str, field_info: FieldInfo) -> Any:
             """Retrieve the value of a serialized field."""
 
             # A: An explicit method was declared to retrieve the value
-            if hasattr(cls, f"get_{field_name}"):
-                return getattr(cls, f"get_{field_name}")(instance=instance)
+            if get_field := getattr(cls, f"get_{field_name}", None):
+                if cls.serializer_metadata.get(f"get_{field_name}", {}).get("accepts_context"):
+                    return get_field(instance=instance, context=context)
+                return get_field(instance=instance)
 
             related_object = getattr(instance, field_name, None)
 
@@ -102,7 +129,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
             # B. The field is an embedded serializer
             if inspect.isclass(origin) and issubclass(origin, ObjectSerializer):
-                return origin.read(related_object, exclude=exclude) if related_object else None
+                return origin.read(related_object, exclude=exclude, context=context) if related_object else None
 
             # C. The field is a list of embedded serializer or optional
             if (
@@ -111,7 +138,9 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
                 and issubclass(args[0], ObjectSerializer)
             ):
                 value_default: Union[list[Any], None] = [] if origin == List else None
-                return args[0].read(related_object, exclude=exclude) if related_object else value_default
+                return (
+                    args[0].read(related_object, exclude=exclude, context=context) if related_object else value_default
+                )
 
             return getattr(instance, field_name)
 
@@ -125,17 +154,23 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
     @classmethod
     def read(
-        cls: type["SerializerT"], instance: AlchemyOrPydanticModelT, exclude: Optional["IncEx"] = None
+        cls: type["SerializerT"],
+        instance: AlchemyOrPydanticModelT,
+        exclude: Optional["IncEx"] = None,
+        context: dict[str | Any] | None = None,
     ) -> "SerializerT":
         """Serialize a single object instance."""
-        return cls(**cls._get_instance_data(instance, exclude=exclude))
+        return cls(**cls._get_instance_data(instance, exclude=exclude, context=context))
 
     @classmethod
     def read_list(
-        cls: type["SerializerT"], instance_list: Sequence[AlchemyOrPydanticModelT], exclude: Optional["IncEx"] = None
+        cls: type["SerializerT"],
+        instance_list: Sequence[AlchemyOrPydanticModelT],
+        exclude: Optional["IncEx"] = None,
+        context: dict[str | Any] | None = None,
     ) -> list["SerializerT"]:
         """Serialize a list of objects."""
-        return [cls.read(instance, exclude=exclude) for instance in instance_list]
+        return [cls.read(instance, exclude=exclude, context=context) for instance in instance_list]
 
     @classmethod
     def read_page(
@@ -143,6 +178,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         instance_list: Sequence[AlchemyOrPydanticModelT],
         cursor_info: CursorInfo,
         request: Request,
+        context: dict[str | Any] | None = None,
     ) -> PaginatedData["SerializerT"]:
         """Serialize a list of objects."""
         page_next = cursor_info.get_next()
@@ -151,7 +187,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
             count=cursor_info.get_count(),
             next=str(request.url.include_query_params(cursor=page_next)) if page_next else None,
             previous=str(request.url.include_query_params(cursor=page_previous)) if page_previous else None,
-            data=cls.read_list(instance_list),
+            data=cls.read_list(instance_list, context=context),
         )
 
 
