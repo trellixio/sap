@@ -1,0 +1,3 @@
+1. For python typing, always use `| None` instead of `Optional`.
+2. When performing typing use base types like `str`, `int`, `list`, `dict` etc. instead of `List`, `Dict`, `Set`, `Tuple` etc.
+4. For all classes, methods and functions add a one line dosctring.

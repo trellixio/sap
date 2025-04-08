@@ -45,6 +45,7 @@ class Object404Error(HTTPError):
     status_code: int = 404
     detail: str = "Object not found"
 
+
 class Cache404Error(HTTPError):
     """Raise when querying cache returns empty result."""
 

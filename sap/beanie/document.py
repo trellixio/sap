@@ -17,7 +17,7 @@ import beanie
 import pydantic
 from beanie import PydanticObjectId
 
-from .exceptions import Object404Error
+from sap.fastapi.exceptions import Object404Error
 
 if TYPE_CHECKING:
     from beanie.odm.documents import DocType

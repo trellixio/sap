@@ -37,6 +37,12 @@ from sap.typing import UnionType
 
 from .pagination import CursorInfo, PaginatedData
 
+try:
+    from sqlalchemy.orm import DeclarativeBase
+except ImportError:
+    # Use Document as DeclarativeBase if sqlalchemy is not available
+    DeclarativeBase = Document
+
 if TYPE_CHECKING:
     from pydantic.main import IncEx
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,8 +54,8 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     @classmethod
     def get_id(cls, instance: AlchemyOrPydanticModelT) -> str:
         """Return the ID of the object."""
-        if isinstance(instance, Document):
-            return str(instance.id)
+        if isinstance(instance, (Document, DeclarativeBase)):
+            return str(instance.id)  # type: ignore
 
         raise NotImplementedError
 

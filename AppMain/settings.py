@@ -23,6 +23,7 @@ import pydantic_settings
 
 import pydantic
 
+from sap.fastapi.cache import CacheParam
 from sap.settings import DatabaseParams, IntegrationParams
 
 
@@ -76,3 +77,4 @@ class _Settings(pydantic_settings.BaseSettings):
 
 
 AppSettings = _Settings()
+CacheParam.redis_url = AppSettings.REDIS.get_dns()

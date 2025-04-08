@@ -10,11 +10,13 @@ import typing
 
 import pytest
 import pytest_asyncio
+from redis.asyncio.client import Redis
 
 from fastapi import Request
 
 from AppMain.asgi import document_models, initialize_beanie
 from AppMain.settings import AppSettings
+from sap.fastapi.cache import CacheParam
 from sap.tests.utils import generate_random_string
 from tests.samples import DummyDoc, EmbeddedDummyDoc
 
@@ -111,6 +113,13 @@ async def fixture_request_basic() -> Request:
         "path": "/api/v1/dummy/",
     }
     return Request(scope=request_scope)
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def clear_redis_cache() -> None:
+    """Clear Redis cache keys relevant to these tests before each test."""
+    async with Redis.from_url(url=CacheParam.redis_url) as redis_client:
+        await redis_client.flushdb()
 
 
 # from celery.contrib.pytest import celery_app

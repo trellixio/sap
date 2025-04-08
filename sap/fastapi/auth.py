@@ -25,7 +25,8 @@ from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401
 
 from AppMain.settings import AppSettings
 from sap.beanie.document import Document
-from sap.beanie.exceptions import Object404Error
+
+from .exceptions import Object404Error
 
 UserT = TypeVar("UserT", bound=Document)
 UserViewT: typing_extensions.TypeAlias = Union[Document, BaseModel, object]
