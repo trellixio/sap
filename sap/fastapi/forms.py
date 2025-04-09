@@ -10,9 +10,9 @@ from typing import Any, Generic, Optional
 import pydantic
 from fastapi import Request
 
+from sap.exceptions import Validation422Error
 from sap.sqlachemy import AlchemyOrPydanticModelT
 
-from .exceptions import Validation422Error
 from .serializers import SerializerT, WSerializerT
 from .utils import Flash, FlashLevel, merge_dict_deep, pydantic_format_errors, unflatten_form_data
 

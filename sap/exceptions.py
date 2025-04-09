@@ -20,8 +20,7 @@ class Object404Error(HTTPError):
     """Raise when querying DB returns empty result."""
 
     status_code: int = 404
-    detail: str = "Object not found" 
-
+    detail: str = "Object not found"
 
 
 class Validation422Error(HTTPError):

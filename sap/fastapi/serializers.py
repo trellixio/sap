@@ -43,7 +43,7 @@ try:
     from sqlalchemy.orm import DeclarativeBase
 except ImportError:
     # Use Document as DeclarativeBase if sqlalchemy is not available
-    DeclarativeBase = Document
+    DeclarativeBase = Document  # type: ignore
 
 if TYPE_CHECKING:
     from pydantic.main import IncEx
@@ -56,7 +56,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     serializer_metadata: ClassVar[dict[str, Any]] = {}
 
     @classmethod
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         """Initialize metadata about getter methods."""
         super().__init_subclass__(**kwargs)
 
@@ -110,7 +110,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         cls,
         instance: AlchemyOrPydanticModelT,
         exclude: Optional["IncEx"] = None,
-        context: dict[str | Any] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Retrieve the serializer value from the instance and getters."""
         context = context or {}
@@ -159,7 +159,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         cls: type["SerializerT"],
         instance: AlchemyOrPydanticModelT,
         exclude: Optional["IncEx"] = None,
-        context: dict[str | Any] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> "SerializerT":
         """Serialize a single object instance."""
         return cls(**cls._get_instance_data(instance, exclude=exclude, context=context))
@@ -169,7 +169,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         cls: type["SerializerT"],
         instance_list: Sequence[AlchemyOrPydanticModelT],
         exclude: Optional["IncEx"] = None,
-        context: dict[str | Any] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> list["SerializerT"]:
         """Serialize a list of objects."""
         return [cls.read(instance, exclude=exclude, context=context) for instance in instance_list]
@@ -180,7 +180,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         instance_list: Sequence[AlchemyOrPydanticModelT],
         cursor_info: CursorInfo,
         request: Request,
-        context: dict[str | Any] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> PaginatedData["SerializerT"]:
         """Serialize a list of objects."""
         page_next = cursor_info.get_next()
