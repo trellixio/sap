@@ -9,7 +9,7 @@ from redis.asyncio.client import Redis
 
 from fastapi import Request
 
-from .utils import CustomJSONEncoder
+from .serializers import CustomJSONEncoder
 
 
 class CacheParam:

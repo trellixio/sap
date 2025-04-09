@@ -6,15 +6,13 @@ that needs to be re-used but are not a core part of the app logic.
 """
 
 import base64
-import json
 import re
-from datetime import date, datetime, time
-from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Literal, Mapping, Optional
 
 from fastapi import Request
 from fastapi.datastructures import FormData
+
 
 if TYPE_CHECKING:
     from pydantic.error_wrappers import ErrorDict
@@ -182,17 +180,3 @@ def unflatten_form_data(form_data: FormData | Mapping[str, Any]) -> dict[str, An
             res[key] = value
 
     return res
-
-
-class CustomJSONEncoder(json.JSONEncoder):
-    """Custom JSON encoder that handles Decimal and datetime objects."""
-
-    def default(self, o: Any) -> Any:
-        """Convert special objects to JSON serializable format."""
-        if isinstance(o, Decimal):
-            return float(o)
-        if isinstance(o, (datetime, date)):
-            return o.isoformat()
-        if isinstance(o, time):
-            return o.strftime("%H:%M:%S")
-        return super().default(o)

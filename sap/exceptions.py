@@ -1,7 +1,5 @@
 """
-Exceptions.
-
-Group common logic exceptions such as ValidationError
+Basic exceptions used across the sap package.
 """
 
 from fastapi import HTTPException, status
@@ -16,6 +14,14 @@ class HTTPError(HTTPException):
     def __init__(self, detail: str = ""):
         """Init exception."""
         super().__init__(status_code=self.status_code, detail=detail or self.detail)
+
+
+class Object404Error(HTTPError):
+    """Raise when querying DB returns empty result."""
+
+    status_code: int = 404
+    detail: str = "Object not found" 
+
 
 
 class Validation422Error(HTTPError):
@@ -39,13 +45,6 @@ class Permission403Error(HTTPError):
     detail: str = "Not enough permission to access resource."
 
 
-class Object404Error(HTTPError):
-    """Raise when querying DB returns empty result."""
-
-    status_code: int = 404
-    detail: str = "Object not found"
-
-
 class Cache404Error(HTTPError):
     """Raise when querying cache returns empty result."""
 
@@ -62,7 +61,9 @@ class Duplicate409Error(HTTPError):
 
 __all__ = [
     "Object404Error",
+    "Cache404Error",
     "Validation400Error",
     "Validation422Error",
     "Permission403Error",
+    "Duplicate409Error",
 ]

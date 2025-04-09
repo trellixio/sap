@@ -7,7 +7,7 @@ Learn more about FastAPI: https://github.com/tiangolo/fastapi
 
 from .exceptions import Object404Error, Validation422Error
 from .forms import FormValidation, validate_form
-from .serializers import ObjectSerializer, WriteObjectSerializer
+from .serializers import CustomJSONEncoder, ObjectSerializer, WriteObjectSerializer
 from .utils import Flash, FlashLevel, pydantic_format_errors
 
 __all__ = [
@@ -17,6 +17,7 @@ __all__ = [
     # Serializers
     "ObjectSerializer",
     "WriteObjectSerializer",
+    "CustomJSONEncoder",
     # Exceptions
     "Validation422Error",
     "Object404Error",

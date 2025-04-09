@@ -8,8 +8,10 @@ Handle data validation.
 
 from __future__ import annotations
 
-import datetime
 import inspect
+import json
+from datetime import date, datetime, time
+from decimal import Decimal
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -87,7 +89,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         return instance.__class__.__name__.lower()
 
     @classmethod
-    def get_created(cls, instance: AlchemyOrPydanticModelT) -> datetime.datetime:
+    def get_created(cls, instance: AlchemyOrPydanticModelT) -> datetime:
         """Return the user creation date."""
         if isinstance(instance, Document):
             assert instance.doc_meta.created  # let mypy know that this cannot be null
@@ -96,7 +98,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         raise NotImplementedError
 
     @classmethod
-    def get_updated(cls, instance: AlchemyOrPydanticModelT) -> datetime.datetime:
+    def get_updated(cls, instance: AlchemyOrPydanticModelT) -> datetime:
         """Return the user creation date."""
         if isinstance(instance, Document):
             assert instance.doc_meta.updated  # let mypy know that this cannot be null
@@ -332,3 +334,19 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
 
 WSerializerT = TypeVar("WSerializerT", bound=WriteObjectSerializer[Any])
+
+
+class CustomJSONEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles Decimal and datetime objects."""
+
+    def default(self, o: Any) -> Any:
+        """Convert special objects to JSON serializable format."""
+        if isinstance(o, Decimal):
+            return float(o)
+        if isinstance(o, (datetime, date)):
+            return o.isoformat()
+        if isinstance(o, time):
+            return o.strftime("%H:%M:%S")
+        if isinstance(o, BaseModel):
+            return o.model_dump()
+        return super().default(o)
