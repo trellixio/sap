@@ -68,6 +68,10 @@ async def assert_rest_can_list(
         # Ensure that the response data has the right format
         # Ensure that the output data matches the input
         response_data: PaginatedResponse = response.json()
+        
+        # from rich import print
+        # print(response_data)
+
         assert sample.keys() == response_data["data"][0].keys()
 
         return True
@@ -100,12 +104,14 @@ async def assert_rest_can_retrieve(
 
         # Ensure that the response data has the right format
         response_data: dict[str, typing.Any] = response.json()
+
+        # from rich import print
+        # print(response_data)
+
         assert (
             sample.keys() == response_data.keys()
         ), f"WrongObject expected={sample.keys()} received={response_data.keys()}"
 
-        # from rich import print
-        # print(response_data)
 
         for key, value in sample.items():
             if value is None:

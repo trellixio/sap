@@ -6,6 +6,10 @@ class UserMixin:
 
     role: str
 
+    def get_role(self) -> str:
+        """Return the role of the user."""
+        return self.role
+
     def has_perm(self, perm: str) -> bool:
         """Check if the user has access to a specific role permission."""
         if perm == "*":
