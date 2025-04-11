@@ -74,6 +74,7 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
 
     packets: list[SignalPacket] = []
     name: ClassVar[str] = ""
+    is_async: ClassVar[bool] = True
 
     def _get_queues(self, channel: StdChannel) -> list[kombu.Queue]:
         """Retrieve the list of AMQP queues associated to each packet signal."""
@@ -148,7 +149,10 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
             if match_amqp_topics(task.packet.topic, topic):
                 # logger.debug(f"Matching task.packet.topic={task.packet.topic} topic={topic} task={task.get_name()}")
                 identifier = body.get("identifier") or body.get("card_pid") or body.get("clover_id")
-                task.apply_async(args=(identifier,), kwargs=body["kwargs"], time_limit=60)
+                if self.is_async:
+                    task.apply_async(args=(identifier,), kwargs=body["kwargs"], time_limit=60)
+                else:
+                    task.apply(args=(identifier,), kwargs=body["kwargs"])
 
     def get_task_list(self) -> list[LambdaTask]:
         """Retrieve the list of lambda tasks to execute."""
