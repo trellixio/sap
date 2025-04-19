@@ -27,6 +27,7 @@ from typing import (
     overload,
 )
 
+import pydantic_core
 from typing_extensions import Literal
 
 from fastapi import Request
@@ -61,7 +62,8 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         super().__init_subclass__(**kwargs)
 
         # Analyze all get_* methods
-        for name, method in cls.__dict__.items():
+        for name in cls.__dict__:
+            method = getattr(cls, name)
             if name.startswith("get_") and callable(method):
                 # Check if the method accepts context
                 if "context" in method.__code__.co_varnames:
@@ -347,6 +349,8 @@ class CustomJSONEncoder(json.JSONEncoder):
             return o.isoformat()
         if isinstance(o, time):
             return o.strftime("%H:%M:%S")
+        if isinstance(o, pydantic_core.Url):
+            return str(o)
         if isinstance(o, BaseModel):
             return o.model_dump()
         return super().default(o)
