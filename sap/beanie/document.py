@@ -123,4 +123,5 @@ class Document(beanie.Document):
         new_doc = await self.get(self.id)
         self.__dict__.update(new_doc.__dict__)
 
+
 DocT = TypeVar("DocT", bound=Document)

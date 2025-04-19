@@ -68,7 +68,7 @@ async def assert_rest_can_list(
         # Ensure that the response data has the right format
         # Ensure that the output data matches the input
         response_data: PaginatedResponse = response.json()
-        
+
         # from rich import print
         # print(response_data)
 
@@ -111,7 +111,6 @@ async def assert_rest_can_retrieve(
         assert (
             sample.keys() == response_data.keys()
         ), f"WrongObject expected={sample.keys()} received={response_data.keys()}"
-
 
         for key, value in sample.items():
             if value is None:
