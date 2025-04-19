@@ -117,5 +117,10 @@ class Document(beanie.Document):
         """Simulate the doc attribute available on Link class."""
         return self
 
+    async def refresh_from_db(self) -> None:
+        """Reset all attributes using values from database."""
+        assert self.id
+        new_doc = await self.get(self.id)
+        self.__dict__.update(new_doc.__dict__)
 
 DocT = TypeVar("DocT", bound=Document)
