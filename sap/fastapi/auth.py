@@ -155,7 +155,7 @@ class BasicAuth:
         """Retrieve name of the `auth_key` attribute use to verify user."""
         return self.auth_key_attribute
 
-    async def retrieve_user(self, user_key: str) -> UserViewT:
+    async def retrieve_user(self, user_key: str, pwd: str | None = None) -> UserViewT:
         """Retrieve a user using authorization key."""
         if self.user_model and issubclass(self.user_model, Document):
             if auth_key_name := self.get_auth_key_attribute():
@@ -185,6 +185,6 @@ class BasicAuth:
         user_key = username or pwd
 
         try:
-            return await self.retrieve_user(user_key)
+            return await self.retrieve_user(user_key, pwd=pwd)
         except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
             raise HTTPException(HTTP_401, detail="Invalid basic auth credentials") from exc
