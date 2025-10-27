@@ -6,11 +6,11 @@
 # For convenience dev dependencies are in the file: requirements-dev.txt
 
 # Package installer
-pip==24.2
+pip==25.3
 
 # Install all dependencies in setup.py
 -e .
 
 # Optional dependencies
-pyairtable~=2.3
+pyairtable~=3.2
 SQLAlchemy~=2.0
