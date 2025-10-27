@@ -31,7 +31,7 @@ def cache_view(
     include_body: bool = False,
 ) -> typing.Callable[[typing.Callable[..., typing.Any]], typing.Callable[..., typing.Any]]:
     """
-    Decorator to cache FastAPI view function results.
+    Cache FastAPI view function results.
 
     Args:
         cache_timeout: Timeout in seconds for the cache entry. If None, uses the default to 1 hour.
@@ -47,11 +47,11 @@ def cache_view(
     """
 
     def decorator(func: typing.Callable[..., typing.Any]) -> typing.Callable[..., typing.Any]:
-        """Decorator to cache FastAPI view function results."""
+        """Define a decorator to cache FastAPI view function results."""
 
         @functools.wraps(func)
         async def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
-            """Wrapper to cache FastAPI view function results."""
+            """Define a wrapper to cache FastAPI view function results."""
             # Extract the request object from args or kwargs
             request = None
             for arg in args:

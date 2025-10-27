@@ -45,7 +45,7 @@ class DummyDoc(DummyDocSchema, Document):
 
 
 class DummyDocSerializer(DummyDocSchema, ObjectSerializer[DummyDoc]):
-    pass
+    """Dummy document serializer used to populate the db for testing."""
 
 
 data_dummy_sample = {

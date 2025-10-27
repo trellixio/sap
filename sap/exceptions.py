@@ -1,4 +1,6 @@
 """
+# Exceptions.
+
 Basic exceptions used across the sap package.
 """
 

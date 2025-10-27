@@ -97,7 +97,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
             assert instance.doc_meta.created  # let mypy know that this cannot be null
             return instance.doc_meta.created
 
-        if hasattr(instance, "created"):
+        if hasattr(instance, "created") and isinstance(instance.created, datetime):
             return instance.created
 
         raise NotImplementedError
@@ -109,7 +109,7 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
             assert instance.doc_meta.updated  # let mypy know that this cannot be null
             return instance.doc_meta.updated
 
-        if hasattr(instance, "updated"):
+        if hasattr(instance, "updated") and isinstance(instance.updated, datetime):
             return instance.updated
 
         raise NotImplementedError
@@ -308,11 +308,11 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
     @overload
     async def create(self, *, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
-        """create overload for sqlachemy app using db."""
+        """Create overload for sqlachemy app using db."""
 
     @overload
     async def create(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
-        """create overload for sqlachemy app using db."""
+        """Create overload for sqlachemy app using db."""
 
     async def create(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Create the object in the database using the data extracted by the serializer."""
@@ -323,11 +323,11 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
     @overload
     async def update(self, *, db: "AsyncSession", **kwargs: Any) -> AlchemyOrPydanticModelT:
-        """update overload for sqlachemy app using db."""
+        """Update overload for sqlachemy app using db."""
 
     @overload
     async def update(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
-        """update overload for sqlachemy app using db."""
+        """Update overload for sqlachemy app using db."""
 
     async def update(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Update the object in the database using the data extracted by the serializer."""

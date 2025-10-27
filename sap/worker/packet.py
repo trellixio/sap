@@ -153,7 +153,7 @@ class SignalPacket(_Packet):
 
     def queue_get_args(self, is_fallback: bool) -> dict[str, typing.Any]:
         """Get arguments for primary queue."""
-        args = {
+        args: dict[str, typing.Any] = {
             "x-dead-letter-exchange": self.exchange_get_name(is_fallback=not is_fallback),  # This is the opposite
         }
         if is_fallback:

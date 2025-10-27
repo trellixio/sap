@@ -1,3 +1,5 @@
+"""SQLAlchemy."""
+
 from typing import TypeVar, Union
 
 import pydantic
