@@ -154,13 +154,15 @@ class SignalPacket(_Packet):
     def queue_get_args(self, is_fallback: bool) -> dict[str, typing.Any]:
         """Get arguments for primary queue."""
         args = {
-            "x-delivery-limit": 5,
             "x-dead-letter-exchange": self.exchange_get_name(is_fallback=not is_fallback),  # This is the opposite
         }
         if is_fallback:
             args |= {"x-message-ttl": 1000 * 60 * 60 * 6}  # 6 hours
         else:
-            args |= {"x-queue-type": "quorum"} | self.extra_queue_arguments
+            args |= {
+                "x-queue-type": "quorum",
+                "x-delivery-limit": 5,
+            } | self.extra_queue_arguments
         return args
 
     def queue_get_params(self, task_name: str, is_fallback: bool = False) -> dict[str, typing.Any]:
