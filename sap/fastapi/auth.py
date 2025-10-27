@@ -155,7 +155,9 @@ class BasicAuth:
         """Retrieve name of the `auth_key` attribute use to verify user."""
         return self.auth_key_attribute
 
-    async def retrieve_user(self, user_key: str, pwd: str | None = None) -> UserViewT:
+    async def retrieve_user(
+        self, user_key: str, pwd: str | None = None  # pylint: disable=unused-argument
+    ) -> UserViewT:
         """Retrieve a user using authorization key."""
         if self.user_model and issubclass(self.user_model, Document):
             if auth_key_name := self.get_auth_key_attribute():

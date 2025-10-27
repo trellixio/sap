@@ -96,7 +96,8 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         if isinstance(instance, Document):
             assert instance.doc_meta.created  # let mypy know that this cannot be null
             return instance.doc_meta.created
-        elif hasattr(instance, "created"):
+
+        if hasattr(instance, "created"):
             return instance.created
 
         raise NotImplementedError
@@ -107,7 +108,8 @@ class ObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         if isinstance(instance, Document):
             assert instance.doc_meta.updated  # let mypy know that this cannot be null
             return instance.doc_meta.updated
-        elif hasattr(instance, "updated"):
+
+        if hasattr(instance, "updated"):
             return instance.updated
 
         raise NotImplementedError

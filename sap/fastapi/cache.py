@@ -1,3 +1,4 @@
+# pylint: disable=too-complex, too-many-branches
 """Cache utilities for FastAPI views."""
 
 import functools
@@ -20,6 +21,7 @@ class CacheParam:
 
 
 def cache_view(
+    *,
     cache_timeout: int = 60 * 60 * 1,  #  1 hour
     key_prefix: str | None = None,
     include_query_params: bool = True,
@@ -36,9 +38,9 @@ def cache_view(
         key_prefix: Prefix for the cache key. If None, uses the function name.
         include_query_params: Whether to include query parameters in the cache key.
         include_path_params: Whether to include path parameters in the cache key.
-        # include_headers: Whether to include headers in the cache key.
-        # include_cookies: Whether to include cookies in the cache key.
-        # include_body: Whether to include request body in the cache key.
+        include_headers: Whether to include headers in the cache key.
+        include_cookies: Whether to include cookies in the cache key.
+        include_body: Whether to include request body in the cache key.
 
     Returns:
         A decorator function that can be applied to FastAPI view functions.
@@ -105,11 +107,11 @@ def cache_view(
 
             # Add body if requested
             if include_body:
-                try:
+                try:  # pylint: disable=too-many-try-statements
                     body = await request.body()
                     if body:
                         key_parts.append(body.decode())
-                except Exception:
+                except Exception:  # pylint: disable=broad-exception-caught
                     # If we can't read the body, just skip it
                     pass
 

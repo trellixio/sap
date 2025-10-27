@@ -1,3 +1,4 @@
+# pylint: disable=no-self-use
 """Tests for BeanieClient class."""
 
 import pytest
@@ -57,6 +58,7 @@ class TestBeanieClient:
         second_db: AsyncIOMotorDatabase = BeanieClient.connections["default"].database
 
         # assert first_db != second_db
+        assert isinstance(first_db, AsyncIOMotorDatabase)
         assert isinstance(second_db, AsyncIOMotorDatabase)
 
     @pytest.mark.asyncio

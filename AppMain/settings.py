@@ -23,7 +23,6 @@ import pydantic_settings
 
 import pydantic
 
-from sap.beanie.client import MongoConnection
 from sap.fastapi.cache import CacheParam
 from sap.settings import DatabaseParams, IntegrationParams
 

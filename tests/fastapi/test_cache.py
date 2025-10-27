@@ -1,8 +1,7 @@
 """Tests for the cache_view decorator."""
 
 import time
-from datetime import datetime
-from typing import Any, Dict, Union
+from typing import Dict, Union
 
 import pytest
 from async_asgi_testclient import TestClient
@@ -14,8 +13,8 @@ from AppMain.asgi import app
 from sap.fastapi.cache import cache_view
 
 
-@pytest.fixture
-def client() -> TestClient:
+@pytest.fixture(name="client")
+def fixture_client() -> TestClient:
     """Create a test client for the FastAPI app."""
     return TestClient(app)
 
@@ -112,28 +111,28 @@ async def test_cache_view_with_path_params(client: TestClient) -> None:
     counter: Dict[str, int] = {"calls": 0}
     response: Response
 
-    @app.get("/view/path/{id}/")
+    @app.get("/view/path/{id_key}/")
     @cache_view()
-    async def test_endpoint_path(request: Request, id: str) -> Dict[str, Union[str, int]]:
+    async def test_endpoint_path(request: Request, id_key: str) -> Dict[str, Union[str, int]]:
         counter["calls"] += 1
-        return {"id": id, "counter": counter["calls"]}
+        return {"id_key": id_key, "counter": counter["calls"]}
 
     # First call with path param
     response = await client.get("/view/path/123/")
     assert response.status_code == 200
-    assert response.json() == {"id": "123", "counter": 1}
+    assert response.json() == {"id_key": "123", "counter": 1}
     assert counter["calls"] == 1
 
     # Second call with the same path param
     response = await client.get("/view/path/123/")
     assert response.status_code == 200
-    assert response.json() == {"id": "123", "counter": 1}
+    assert response.json() == {"id_key": "123", "counter": 1}
     assert counter["calls"] == 1
 
     # Call with a different path param
     response = await client.get("/view/path/456/")
     assert response.status_code == 200
-    assert response.json() == {"id": "456", "counter": 2}
+    assert response.json() == {"id_key": "456", "counter": 2}
     assert counter["calls"] == 2
 
 
