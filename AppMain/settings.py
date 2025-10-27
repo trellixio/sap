@@ -78,5 +78,5 @@ class _Settings(pydantic_settings.BaseSettings):
     TOKENIFY: IntegrationParams
 
 
-AppSettings = _Settings()
+AppSettings = _Settings()  # pylint: disable=invalid-name
 CacheParam.redis_url = AppSettings.REDIS.get_dns()

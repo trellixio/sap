@@ -41,9 +41,9 @@ def pydantic_format_errors(error_list: list["ErrorDict"]) -> dict[str, dict[str,
 class FlashLevel(Enum):
     """Fash message levels."""
 
-    INFO: str = "info"
-    ERROR: str = "error"
-    SUCCESS: str = "success"
+    INFO = "info"
+    ERROR = "error"
+    SUCCESS = "success"
 
 
 class Flash:

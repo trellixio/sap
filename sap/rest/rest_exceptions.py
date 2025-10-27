@@ -144,7 +144,7 @@ class Rest503Error(RestAPIError):
     message = "The Rest server is unreachable."
 
 
-RestErrorMap = {
+REST_ERROR_MAP = {
     400: Rest400Error,
     422: Rest400Error,
     401: Rest401Error,

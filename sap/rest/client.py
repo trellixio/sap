@@ -145,8 +145,8 @@ class RestClient:
             if "text/html" in response.headers["content-type"]:
                 raise rest_exceptions.Rest405Error(response=response, request=response.request, data=response_data)
             raise rest_exceptions.Rest404Error(response=response, request=response.request, data=response_data)
-        if response.status_code in rest_exceptions.RestErrorMap:
-            raise rest_exceptions.RestErrorMap[response.status_code](
+        if response.status_code in rest_exceptions.REST_ERROR_MAP:
+            raise rest_exceptions.REST_ERROR_MAP[response.status_code](
                 response=response, request=response.request, data=response_data
             )
 

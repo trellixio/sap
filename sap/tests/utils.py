@@ -14,7 +14,7 @@ from typing import Any
 import httpx
 from rich import print  # pylint: disable=redefined-builtin
 
-from sap.rest.rest_exceptions import RestErrorMap
+from sap.rest.rest_exceptions import REST_ERROR_MAP
 
 
 def generate_random_string(length: int) -> str:
@@ -103,7 +103,7 @@ async def cache__httpx__request(
         result_cached: dict[str, Any] = CACHED_DATA[request_key]
         response = httpx.Response(**result_cached, request=request)
         if result_cached["status_code"] >= 400:
-            raise RestErrorMap[result_cached["status_code"]](
+            raise REST_ERROR_MAP[result_cached["status_code"]](
                 response=response, request=request, data=result_cached["json"]
             )
         return response

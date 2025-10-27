@@ -27,16 +27,16 @@ from sap.settings import SapSettings
 class FetchStrategy(IntEnum):
     """Define if new or old data should be fetched."""
 
-    NEW: int = 1
-    OLD: int = 2
+    NEW = 1
+    OLD = 2
 
 
 class CronResponseStatus(Enum):
     """Status of the crontask after it finish running."""
 
-    SUCCESS: str = "Success"
-    ABORTED: str = "Aborted"
-    ERROR: str = "Error"
+    SUCCESS = "Success"
+    ABORTED = "Aborted"
+    ERROR = "Error"
 
 
 class CronResponse(TypedDict, total=False):

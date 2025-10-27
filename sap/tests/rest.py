@@ -115,7 +115,7 @@ async def assert_rest_can_retrieve(
         for key, value in sample.items():
             if value is None:
                 continue
-            assert type(value) == type(  # pylint: disable=unidiomatic-typecheck
+            assert type(value) == type(
                 response_data[key]
             ), f"TypeMismatch key={key} expected={type(value)} received={type(response_data[key])}"
             if isinstance(value, dict):

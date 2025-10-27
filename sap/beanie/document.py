@@ -27,10 +27,10 @@ if TYPE_CHECKING:
 class DocSourceEnum(Enum):
     """Source where a document has been fetched from."""
 
-    WEBHOOK: str = "webhook"
-    RETRIEVE: str = "retrieve"
-    CRON: str = "cron"
-    PARENT: str = "parent"
+    WEBHOOK = "webhook"
+    RETRIEVE = "retrieve"
+    CRON = "cron"
+    PARENT = "parent"
 
 
 class DocMeta(pydantic.BaseModel):
