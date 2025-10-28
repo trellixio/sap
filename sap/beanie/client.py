@@ -9,10 +9,11 @@ from __future__ import annotations
 import asyncio
 import typing
 from dataclasses import dataclass
-from typing import List, Type
+from typing import Any, List, Mapping, Type
 
 import pymongo.errors
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo import AsyncMongoClient
+from pymongo.asynchronous.database import AsyncDatabase
 
 import beanie
 
@@ -24,8 +25,8 @@ from sap.settings import DatabaseParams
 class MongoConnection:
     """Define a standard cron task response."""
 
-    client: AsyncIOMotorClient
-    database: AsyncIOMotorDatabase
+    client: AsyncMongoClient[Mapping[str, Any]]
+    database: AsyncDatabase[Mapping[str, Any]]
 
 
 class BeanieClient:
@@ -34,7 +35,7 @@ class BeanieClient:
     connections: typing.ClassVar[dict[str, MongoConnection]] = {}
 
     @classmethod
-    async def get_db_default(cls) -> AsyncIOMotorDatabase:
+    async def get_db_default(cls) -> AsyncDatabase[Mapping[str, Any]]:
         """Return the default db connection."""
         return cls.connections["default"].database
 
@@ -52,17 +53,17 @@ class BeanieClient:
         """
 
         if "default" in cls.connections and not force:
-            database: AsyncIOMotorDatabase = cls.connections["default"].database
+            database: AsyncDatabase[Mapping[str, Any]] = cls.connections["default"].database
 
             try:
                 await database.command("ping")
-            except pymongo.errors.ConnectionFailure:
+            except (pymongo.errors.ConnectionFailure, RuntimeError):
                 logger.debug("--> Invalidate existing MongoDB connection")
             else:
                 logger.debug("--> Using existing MongoDB connection")
                 return
 
-        client = AsyncIOMotorClient(mongo_params.get_dns())
+        client: AsyncMongoClient[Mapping[str, Any]] = AsyncMongoClient(mongo_params.get_dns())
         # if hijack_motor_loop:
         client.get_io_loop = asyncio.get_running_loop  # type: ignore
         database = client[mongo_params.db]

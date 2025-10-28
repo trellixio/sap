@@ -96,6 +96,8 @@ async def populate_dummy_doc() -> typing.AsyncGenerator[bool, None]:
 
     yield True  # suspended until tests are done
 
+    # Reinitialize Beanie to ensure we're in the correct event loop for teardown
+    await initialize_beanie()
     result = await DummyDoc.find_all().delete_many()
     assert result
     print(f"\nDeleted {result.deleted_count} DummyDoc")

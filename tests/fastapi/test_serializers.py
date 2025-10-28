@@ -24,9 +24,12 @@ async def test_serialize_page(request_basic: Request) -> None:
     async def test_page_for_request(request: Request, limit: int = 1) -> PaginatedData[DummyDocSerializer]:
         """Fetch one page and verify if it matches."""
         cursor_info = CursorInfo(request=request)
+        # Get total count without limit/skip
+        total_count = await DummyDoc.find().count()
+        cursor_info.set_count(total_count)
+        # Get paginated results with limit/skip
         qs = DummyDoc.find(**cursor_info.get_beanie_query_params())
         docs = await qs.to_list()
-        cursor_info.set_count(await qs.count())
         page: PaginatedData[DummyDocSerializer] = DummyDocSerializer.read_page(
             docs, cursor_info=cursor_info, request=request_basic
         )

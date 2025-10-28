@@ -14,7 +14,7 @@ from sap.fastapi.cache import cache_view
 
 
 @pytest.fixture(name="client")
-def fixture_client() -> TestClient:
+async def fixture_client() -> TestClient:
     """Create a test client for the FastAPI app."""
     return TestClient(app)
 

@@ -97,14 +97,15 @@ def get_task(is_error: bool) -> CronTask:
 
 
 @pytest.mark.parametrize("is_error", [False, True])
-def test_cron_task_run(is_error: bool) -> None:
+@pytest.mark.asyncio
+async def test_cron_task_run(is_error: bool) -> None:
     task = get_task(is_error=is_error)
     # Force the test to behave like if it were a prod environment
     SapSettings.is_env_prod = True
 
     if AppSettings.AIRTABLE_TOKEN:
         # Testing that airtable sync is working as expected
-        task.run()
+        await task.handle_process()
 
     SapSettings.is_env_prod = False
 
