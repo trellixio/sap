@@ -209,7 +209,7 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     """Serialize an object for create or update."""
 
     _instance: Optional[AlchemyOrPydanticModelT] = PrivateAttr(default=None)
-    embedded_serializers: ClassVar[dict[str, type["WriteObjectSerializer[Any]"]]] = {}
+    embedded_serializers: ClassVar[dict[str, type[BaseModel]]] = {}
 
     @property
     def instance(self) -> Optional[AlchemyOrPydanticModelT]:
@@ -225,7 +225,7 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         """Override init to filter embedded serializers."""
         super().__init__(**data)
         self._instance = instance
-        for field_name, field_info in self.model_fields.items():
+        for field_name, field_info in type(self).model_fields.items():
             if inspect.isclass(field_info.annotation) and issubclass(field_info.annotation, WriteObjectSerializer):
                 self.embedded_serializers[field_name] = field_info.annotation
 
@@ -273,7 +273,7 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         # # but their original value is still needed
         # exclude_doc_dumps = {}
 
-        for field_name, field_info in self.model_fields.items():
+        for field_name, field_info in type(self).model_fields.items():
             if inspect.isclass(field_info.annotation) and issubclass(field_info.annotation, Document):
                 # exclude_doc_dumps[field_name] = True
                 exclude.add(field_name)  # type: ignore
@@ -316,7 +316,7 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
     async def create(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Create the object in the database using the data extracted by the serializer."""
-        instance_class: type[AlchemyOrPydanticModelT] | None = self.model_fields["instance"].annotation
+        instance_class: type[AlchemyOrPydanticModelT] | None = type(self).model_fields["instance"].annotation
         if instance_class and issubclass(instance_class, Document):
             return await instance_class(**self.model_dump()).create()
         raise NotImplementedError

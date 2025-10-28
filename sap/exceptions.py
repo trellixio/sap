@@ -28,7 +28,7 @@ class Object404Error(HTTPError):
 class Validation422Error(HTTPError):
     """Raise when parameter validation fails."""
 
-    status_code: int = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code: int = status.HTTP_422_UNPROCESSABLE_CONTENT
     detail: str = "The data submitted is invalid."
 
 

@@ -6,8 +6,8 @@ If your celery tasks are not running as expected, you can use this tasks that wi
 all running activities to help debug where the issue might be.
 """
 
+import asyncio
 import os
-import time
 from datetime import datetime
 from typing import Any
 
@@ -45,7 +45,7 @@ class DebugTask:
 
         logger.warning("Running Start self.name=%s proc.pid=%d args=%s kwargs=%s time_now=%s", *log_args)
 
-        time.sleep(30)
+        await asyncio.sleep(30)
 
         logger.warning("Running End self.name=%s proc.pid=%d args=%s kwargs=%s time_now=%s", *log_args)
         # raise Exception("I am tired.!")

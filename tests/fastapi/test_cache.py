@@ -1,6 +1,6 @@
 """Tests for the cache_view decorator."""
 
-import time
+import asyncio
 from typing import Dict, Union
 
 import pytest
@@ -153,7 +153,7 @@ async def test_cache_view_with_custom_timeout(client: TestClient) -> None:
     assert response.json() == {"data": "test", "counter": 1}
     assert counter["calls"] == 1
 
-    time.sleep(1)
+    await asyncio.sleep(1)
 
     # Second call - should use the cache
     response = await client.get("/view/timeout/")

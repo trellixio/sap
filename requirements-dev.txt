@@ -41,6 +41,7 @@ pytest-cov~=7.0
 async-asgi-testclient~=1.4
 pytest-celery~=0.0  # < upgrade carefully, it requires docker
 pydantic-settings~=2.11
+bcrypt~=4.3
 
 # CI/CD
 pre-commit~=4.3

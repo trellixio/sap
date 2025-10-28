@@ -157,7 +157,7 @@ async def assert_rest_can_create(
         assert variant_bad
 
         assert response_good.status_code == status.HTTP_201_CREATED, response_good.content
-        assert response_bad.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY, response_bad.content
+        assert response_bad.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT, response_bad.content
 
         # Ensure that the response data has the right format
         response_good_data: dict[str, typing.Any] = response_good.json()
@@ -212,7 +212,7 @@ async def assert_rest_can_update(
         assert variant_bad
 
         assert response_good.status_code == status.HTTP_202_ACCEPTED, response_good.content
-        assert response_bad.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY, response_bad.content
+        assert response_bad.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT, response_bad.content
 
         # Ensure that the response data has the right format
         response_good_data: dict[str, typing.Any] = response_good.json()

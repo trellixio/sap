@@ -18,7 +18,7 @@ from AppMain.asgi import document_models, initialize_beanie
 from AppMain.settings import AppSettings
 from sap.fastapi.cache import CacheParam
 from sap.tests.utils import generate_random_string
-from tests.samples import DummyDoc, EmbeddedDummyDoc
+from tests.samples import CategoryDoc, DummyDoc, EmbeddedDummyDoc, ProductDoc, UserDoc
 
 # pytest_plugins = ("celery.contrib.pytest",)
 
@@ -54,7 +54,7 @@ async def initialise_db() -> typing.AsyncGenerator[bool, None]:
     print("Connecting to MongoDB")
     print("Initializing Beanie")
 
-    document_models.append(DummyDoc)
+    document_models.extend([DummyDoc, CategoryDoc, ProductDoc, UserDoc])
 
     await initialize_beanie()
 
