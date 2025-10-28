@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Type, TypeVar, Union
 
-from pymongo.client_session import ClientSession
+from pymongo.asynchronous.client_session import AsyncClientSession
 
 import beanie
 import pydantic
@@ -63,7 +63,7 @@ class Document(beanie.Document):
     async def get_or_404(
         cls: Type["DocType"],
         document_id: Union[PydanticObjectId, str],
-        session: Optional[ClientSession] = None,
+        session: Optional[AsyncClientSession] = None,
         ignore_cache: bool = False,
         fetch_links: bool = False,
         with_children: bool = False,
@@ -71,7 +71,7 @@ class Document(beanie.Document):
     ) -> "DocType":
         """Get document by id or raise 404 error if document does not exist."""
         doc_id = document_id if isinstance(document_id, PydanticObjectId) else PydanticObjectId(document_id)
-        result = await super().get(
+        result: Union["DocType", None] = await super().get(
             document_id=doc_id,
             session=session,
             ignore_cache=ignore_cache,
@@ -86,22 +86,26 @@ class Document(beanie.Document):
     @classmethod
     async def find_one_or_404(
         cls: Type["DocType"],
-        *args: Union[Mapping[str, Any], bool],
+        *args: Union[Mapping[Any, Any], bool],
         projection_model: Optional[Type["DocumentProjectionType"]] = None,
-        session: Optional[ClientSession] = None,
+        session: Optional[AsyncClientSession] = None,
         ignore_cache: bool = False,
         fetch_links: bool = False,
         with_children: bool = False,
+        nesting_depth: Optional[int] = None,
+        nesting_depths_per_field: Optional[dict[str, int]] = None,
         **pymongo_kwargs: Any,
     ) -> Union["DocumentProjectionType", "DocType"]:
         """Find document from query or raise 404 error if document does not exist."""
-        result = await super().find_one(
+        result: Union["DocumentProjectionType", "DocType", None] = await super().find_one(
             *args,
             projection_model=projection_model,
             session=session,
             ignore_cache=ignore_cache,
             fetch_links=fetch_links,
             with_children=with_children,
+            nesting_depth=nesting_depth,
+            nesting_depths_per_field=nesting_depths_per_field,
             **pymongo_kwargs,
         )
         if not result:
