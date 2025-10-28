@@ -12,7 +12,7 @@ from tests.samples import DummyDoc, DummyDocSerializer, data_dummy_sample
 @pytest.mark.asyncio
 async def test_serialize() -> None:
     """Serialize dummy documents."""
-    doc = await DummyDoc.find_one_or_404()
+    doc: DummyDoc = await DummyDoc.find_one_or_404()
     data_serialized = DummyDocSerializer.read(doc).model_dump()
     assert data_dummy_sample.keys() == data_serialized.keys()
 

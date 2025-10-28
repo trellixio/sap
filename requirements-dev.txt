@@ -39,7 +39,7 @@ pytest-asyncio~=1.2.0
 coverage~=7.11
 pytest-cov~=7.0
 async-asgi-testclient~=1.4
-pytest-celery~=0.0
+pytest-celery~=0.0  # < upgrade carefully, it requires docker
 pydantic-settings~=2.11
 
 # CI/CD
