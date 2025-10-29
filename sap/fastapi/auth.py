@@ -9,10 +9,9 @@ from __future__ import annotations
 import base64
 import binascii
 import time
-from typing import ClassVar, TypeVar, Union
+from typing import ClassVar, Generic, TypeVar, Union
 
 import jwt
-import typing_extensions
 
 from fastapi import Request, Response
 from fastapi.exceptions import HTTPException
@@ -28,7 +27,8 @@ from sap.beanie.document import Document
 from sap.exceptions import Object404Error
 
 UserT = TypeVar("UserT", bound=Document)
-UserViewT: typing_extensions.TypeAlias = Union[Document, BaseModel, object]
+# UserViewT: typing_extensions.TypeAlias = Union[Document, BaseModel, object]
+UserViewT = TypeVar("UserViewT", bound=Union[Document, BaseModel, object])
 
 
 class JWTAuth:
@@ -133,7 +133,7 @@ class JWTAuth:
 #         # return AuthCredentials([user.get_scopes()]), user
 
 
-class BasicAuth:
+class BasicAuth(Generic[UserViewT]):
     """Basic authentication utils.
 
     This can be used to authenticate user with through `Authorization` header using the Basic protocol.

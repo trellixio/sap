@@ -22,7 +22,7 @@ class TestPasswordMixin:
         user.set_password(password)
 
         # Test verify_password returns False for incorrect password.
-        assert user.hashed_password and user.hashed_password.startswith("$2b$")  # type: ignore
+        assert user.hashed_password and user.hashed_password.startswith("$2b$")
 
         # Test verify_password returns True for correct password.
         assert user.verify_password(password) is True

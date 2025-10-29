@@ -276,9 +276,7 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         """Dump the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
         exclude = exclude or set()
-        exclude |= self._document_fields
-        exclude.add("instance")  # type: ignore
-        exclude.add("_instance")  # type: ignore
+        exclude |= self._document_fields | {"instance", "_instance"}  # type: ignore
 
         # # Some fields are only excluded from being cascade dumps to dict,
         # # but their original value is still needed

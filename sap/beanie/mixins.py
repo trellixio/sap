@@ -1,7 +1,5 @@
 """Mixin for User models."""
 
-import typing
-
 import passlib.context
 
 import pydantic
@@ -23,9 +21,6 @@ class PasswordMixin(pydantic.BaseModel):
 
         Args:
             password: The password to hash truncated to 70 characters.
-
-        Returns:
-            None
         """
         self.hashed_password = crypt_context.hash(password)
 

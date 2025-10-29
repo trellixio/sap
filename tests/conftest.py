@@ -18,7 +18,7 @@ from AppMain.asgi import document_models, initialize_beanie
 from AppMain.settings import AppSettings
 from sap.fastapi.cache import CacheParam
 from sap.tests.utils import generate_random_string
-from tests.samples import CategoryDoc, DummyDoc, EmbeddedDummyDoc, ProductDoc, UserDoc
+from tests.samples import CategoryDoc, DummyDoc, EmbeddedDummyDoc, MerchantDoc, ProductDoc, UserDoc
 
 # pytest_plugins = ("celery.contrib.pytest",)
 
@@ -54,7 +54,7 @@ async def initialise_db() -> typing.AsyncGenerator[bool, None]:
     print("Connecting to MongoDB")
     print("Initializing Beanie")
 
-    document_models.extend([DummyDoc, CategoryDoc, ProductDoc, UserDoc])
+    document_models.extend([DummyDoc, CategoryDoc, ProductDoc, UserDoc, MerchantDoc])
 
     await initialize_beanie()
 
@@ -111,7 +111,7 @@ async def fixture_request_basic() -> Request:
         "client": ("127.0.0.1", 59957),
         "scheme": "https",
         "method": "GET",
-        "headers": [("host", "localhost:8000")],
+        "headers": [(b"host", b"localhost:8000")],
         "path_params": {"card_address": "$xxx"},
         "query_string": b"limit=1",
         "path": "/api/v1/dummy/",

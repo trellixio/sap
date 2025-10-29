@@ -1,5 +1,7 @@
 """
 Application Performance Monitoring.
+
+Used for testing if database queries are resource efficient.
 """
 
 import pymongo.monitoring

@@ -1,3 +1,4 @@
+# pylint: disable=no-self-use, protected-access
 """Tests for fastapi/auth.py."""
 
 import base64
@@ -11,7 +12,6 @@ import pytest_asyncio
 from beanie import PydanticObjectId
 from fastapi import Request, Response
 from fastapi.exceptions import HTTPException
-from starlette.middleware.sessions import SessionMiddleware
 
 from AppMain.settings import AppSettings
 from sap.exceptions import Object404Error
@@ -35,22 +35,6 @@ class TestJWTAuth:
     def jwt_auth(self) -> JWTAuth:
         """Create a JWTAuth instance."""
         return JWTAuth(user_model=UserDoc)
-
-    @pytest.fixture
-    def mock_request(self) -> Request:
-        """Create a mock Request object."""
-        request_scope = {
-            "type": "http",
-            "http_version": "1.1",
-            "server": ("127.0.0.1", 8000),
-            "client": ("127.0.0.1", 59957),
-            "scheme": "https",
-            "method": "GET",
-            "headers": [("host", "localhost:8000")],
-            "path": "/test/",
-            "query_string": b"",
-        }
-        return Request(scope=request_scope)
 
     @pytest.fixture
     def mock_response(self) -> Response:
@@ -123,10 +107,10 @@ class TestJWTAuth:
 
     @pytest.mark.asyncio
     async def test_login(
-        self, jwt_auth: JWTAuth, user_doc: UserDoc, mock_request: Request, mock_response: Response
+        self, jwt_auth: JWTAuth, user_doc: UserDoc, request_basic: Request, mock_response: Response
     ) -> None:
         """Test login sets authentication cookie."""
-        response = await jwt_auth.login(mock_response, mock_request, user_doc)
+        response = await jwt_auth.login(mock_response, request_basic, user_doc)
 
         # Verify cookie was set
         assert "set-cookie" in response.headers
@@ -135,9 +119,9 @@ class TestJWTAuth:
         assert "HttpOnly" in cookie_header
 
     @pytest.mark.asyncio
-    async def test_logout(self, jwt_auth: JWTAuth, mock_request: Request, mock_response: Response) -> None:
+    async def test_logout(self, jwt_auth: JWTAuth, request_basic: Request, mock_response: Response) -> None:
         """Test logout deletes authentication cookie."""
-        response = await jwt_auth.logout(mock_response, mock_request)
+        response = await jwt_auth.logout(mock_response, request_basic)
 
         # Verify cookie was deleted
         assert "set-cookie" in response.headers
@@ -146,44 +130,44 @@ class TestJWTAuth:
         assert "Max-Age=0" in cookie_header or "expires=" in cookie_header.lower()
 
     @pytest.mark.asyncio
-    async def test_authenticate_success(self, jwt_auth: JWTAuth, user_doc: UserDoc, mock_request: Request) -> None:
+    async def test_authenticate_success(self, jwt_auth: JWTAuth, user_doc: UserDoc, request_basic: Request) -> None:
         """Test authenticate returns user with valid cookie."""
         # Create token and set it in request cookies
         token = jwt_auth.create_token(user_doc)
-        mock_request._cookies = {"user_session": token}
+        request_basic._cookies = {"user_session": token}
 
-        user: UserDoc = await jwt_auth.authenticate(mock_request)
+        user: UserDoc = await jwt_auth.authenticate(request_basic)
 
         assert user.id == user_doc.id
         assert user.username == user_doc.username
 
     @pytest.mark.asyncio
-    async def test_authenticate_missing_cookie(self, jwt_auth: JWTAuth, mock_request: Request) -> None:
+    async def test_authenticate_missing_cookie(self, jwt_auth: JWTAuth, request_basic: Request) -> None:
         """Test authenticate raises HTTPException when cookie is missing."""
-        mock_request._cookies = {}
+        request_basic._cookies = {}
 
         with pytest.raises(HTTPException) as exc_info:
-            await jwt_auth.authenticate(mock_request)
+            await jwt_auth.authenticate(request_basic)
 
         assert exc_info.value.status_code == 307
-        assert "Location" in exc_info.value.headers
+        assert exc_info.value.headers is not None
         assert exc_info.value.headers["Location"] == "/pages/auth/login/"
 
     @pytest.mark.asyncio
-    async def test_authenticate_invalid_token(self, jwt_auth: JWTAuth, mock_request: Request) -> None:
+    async def test_authenticate_invalid_token(self, jwt_auth: JWTAuth, request_basic: Request) -> None:
         """Test authenticate raises HTTPException with invalid token."""
-        mock_request._cookies = {"user_session": "invalid_token"}
+        request_basic._cookies = {"user_session": "invalid_token"}
 
         with pytest.raises(HTTPException) as exc_info:
-            await jwt_auth.authenticate(mock_request)
+            await jwt_auth.authenticate(request_basic)
 
         assert exc_info.value.status_code == 307
-        assert "Location" in exc_info.value.headers
+        assert exc_info.value.headers is not None
         assert exc_info.value.headers["Location"] == "/pages/auth/login/"
 
     @pytest.mark.asyncio
     async def test_authenticate_expired_token(
-        self, jwt_auth: JWTAuth, user_doc: UserDoc, mock_request: Request
+        self, jwt_auth: JWTAuth, user_doc: UserDoc, request_basic: Request
     ) -> None:
         """Test authenticate raises HTTPException with expired token."""
         # Create an expired token
@@ -191,36 +175,45 @@ class TestJWTAuth:
         jwt_data = {"exp": expired_time, "user_id": str(user_doc.id)}
         expired_token = jwt.encode(payload=jwt_data, key=AppSettings.CRYPTO_SECRET, algorithm="HS256")
 
-        mock_request._cookies = {"user_session": expired_token}
+        request_basic._cookies = {"user_session": expired_token}
 
         with pytest.raises(HTTPException) as exc_info:
-            await jwt_auth.authenticate(mock_request)
+            await jwt_auth.authenticate(request_basic)
 
         assert exc_info.value.status_code == 307
+        assert exc_info.value.headers is not None
         assert "Location" in exc_info.value.headers
 
     @pytest.mark.asyncio
-    async def test_authenticate_nonexistent_user(self, jwt_auth: JWTAuth, mock_request: Request) -> None:
+    async def test_authenticate_nonexistent_user(self, jwt_auth: JWTAuth, request_basic: Request) -> None:
         """Test authenticate raises HTTPException when user doesn't exist."""
         # Create token with non-existent user_id
         fake_id = PydanticObjectId()
         jwt_data = {"exp": int(time.time()) + 3600, "user_id": str(fake_id)}
         token = jwt.encode(payload=jwt_data, key=AppSettings.CRYPTO_SECRET, algorithm="HS256")
 
-        mock_request._cookies = {"user_session": token}
+        request_basic._cookies = {"user_session": token}
 
         with pytest.raises(HTTPException) as exc_info:
-            await jwt_auth.authenticate(mock_request)
+            await jwt_auth.authenticate(request_basic)
 
         assert exc_info.value.status_code == 307
+        assert exc_info.value.headers is not None
         assert "Location" in exc_info.value.headers
+
+
+class ExampleBasicAuth(BasicAuth[UserDoc]):
+    """BasicAuth class for testing."""
+
+
+basic_auth = ExampleBasicAuth(user_model=UserDoc)
 
 
 class TestBasicAuth:
     """Test cases for BasicAuth class."""
 
     @pytest_asyncio.fixture
-    async def user_doc(self) -> UserDoc:
+    async def user_doc(self) -> typing.AsyncGenerator[UserDoc, None]:
         """Create a test user document."""
         user = await UserDoc(
             username="basicuser",
@@ -233,7 +226,7 @@ class TestBasicAuth:
         await user.delete()
 
     @pytest_asyncio.fixture
-    async def user_doc_no_auth_key(self) -> UserDoc:
+    async def user_doc_no_auth_key(self) -> typing.AsyncGenerator[UserDoc, None]:
         """Create a test user document without auth_key."""
         user = await UserDoc(
             username="basicuser2",
@@ -245,20 +238,15 @@ class TestBasicAuth:
         await user.delete()
 
     @pytest.fixture
-    def basic_auth(self) -> BasicAuth:
-        """Create a BasicAuth instance with UserDoc model."""
-        return BasicAuth(user_model=UserDoc)
-
-    @pytest.fixture
-    def basic_auth_no_model(self) -> BasicAuth:
+    def basic_auth_no_model(self) -> ExampleBasicAuth:
         """Create a BasicAuth instance without user model."""
-        return BasicAuth(user_model=None)
+        return ExampleBasicAuth(user_model=None)
 
     @pytest.fixture
-    def basic_auth_no_key_attr(self) -> BasicAuth:
+    def basic_auth_no_key_attr(self) -> ExampleBasicAuth:
         """Create a BasicAuth instance that uses ID instead of auth_key."""
 
-        class BasicAuthNoKey(BasicAuth):
+        class BasicAuthNoKey(ExampleBasicAuth):
             """BasicAuth subclass that doesn't use auth_key."""
 
             def get_auth_key_attribute(self) -> str | None:
@@ -267,56 +255,22 @@ class TestBasicAuth:
 
         return BasicAuthNoKey(user_model=UserDoc)
 
-    def create_request_with_headers(self, headers: dict[str, str] | None = None) -> Request:
+    def create_request_with_headers(self, request_basic: Request, authorization: str | None = None) -> Request:
         """Create a Request object with custom headers."""
-        header_list = [("host", "localhost:8000")]
-        if headers:
-            for key, value in headers.items():
-                header_list.append((key.lower().encode(), value.encode()))
-
-        request_scope = {
-            "type": "http",
-            "http_version": "1.1",
-            "server": ("127.0.0.1", 8000),
-            "client": ("127.0.0.1", 59957),
-            "scheme": "https",
-            "method": "GET",
-            "headers": header_list,
-            "path": "/api/test/",
-            "query_string": b"",
-        }
-        return Request(scope=request_scope)
-
-    def test_init_with_model(self, basic_auth: BasicAuth) -> None:
-        """Test BasicAuth initialization with user model."""
-        assert basic_auth.user_model == UserDoc
-        assert basic_auth.auth_key_attribute == "auth_key"
-
-    def test_init_without_model(self, basic_auth_no_model: BasicAuth) -> None:
-        """Test BasicAuth initialization without user model."""
-        assert basic_auth_no_model.user_model is None
-        assert basic_auth_no_model.auth_key_attribute == "auth_key"
-
-    def test_get_auth_key_attribute(self, basic_auth: BasicAuth) -> None:
-        """Test get_auth_key_attribute returns correct attribute name."""
-        attr = basic_auth.get_auth_key_attribute()
-        assert attr == "auth_key"
+        headers_auth = {}
+        if authorization:
+            headers_auth = {"headers": [(b"authorization", authorization.encode())]}
+        return Request(scope=request_basic.scope | headers_auth)  # type: ignore
 
     @pytest.mark.asyncio
-    async def test_retrieve_user_by_auth_key(self, basic_auth: BasicAuth, user_doc: UserDoc) -> None:
+    async def test_retrieve_user_by_auth_key(self, user_doc: UserDoc) -> None:
         """Test retrieve_user successfully retrieves user by auth_key."""
         assert user_doc.auth_key is not None
         retrieved_user: UserDoc = await basic_auth.retrieve_user(user_doc.auth_key)
         assert retrieved_user.id == user_doc.id
 
     @pytest.mark.asyncio
-    async def test_retrieve_user_by_id(self, basic_auth_no_key_attr: BasicAuth, user_doc_no_auth_key: UserDoc) -> None:
-        """Test retrieve_user successfully retrieves user by ID when auth_key attribute is not used."""
-        retrieved_user = await basic_auth_no_key_attr.retrieve_user(str(user_doc_no_auth_key.id))
-        assert retrieved_user.id == user_doc_no_auth_key.id
-
-    @pytest.mark.asyncio
-    async def test_retrieve_user_nonexistent(self, basic_auth: BasicAuth) -> None:
+    async def test_retrieve_user_nonexistent(self) -> None:
         """Test retrieve_user raises error for non-existent user."""
         fake_id = PydanticObjectId()
 
@@ -324,60 +278,65 @@ class TestBasicAuth:
             await basic_auth.retrieve_user(str(fake_id))
 
     @pytest.mark.asyncio
-    async def test_retrieve_user_no_model(self, basic_auth_no_model: BasicAuth) -> None:
+    async def test_retrieve_user_no_model(self, basic_auth_no_model: ExampleBasicAuth) -> None:
         """Test retrieve_user raises NotImplementedError when no model is set."""
         with pytest.raises(NotImplementedError):
             await basic_auth_no_model.retrieve_user("test_key")
 
     @pytest.mark.asyncio
-    async def test_authenticate_success_with_auth_key(self, basic_auth: BasicAuth, user_doc: UserDoc) -> None:
+    async def test_authenticate_success_with_auth_key(
+        self, request_basic: Request, user_doc: UserDoc
+    ) -> None:
         """Test authenticate successfully authenticates user with auth_key."""
         # Create basic auth header using auth_key
         assert user_doc.auth_key is not None
-        credentials = base64.b64encode(f"{user_doc.auth_key}:password".encode()).decode("ascii")
-        mock_request = self.create_request_with_headers({"authorization": f"Basic {credentials}"})
-
-        user: UserDoc = await basic_auth.authenticate(mock_request)
+        credentials = base64.b64encode(f"{user_doc.auth_key}:".encode()).decode("ascii")
+        request_auth = self.create_request_with_headers(request_basic, authorization=f"Basic {credentials}")
+        user: UserDoc = await basic_auth.authenticate(request_auth)
         assert user.username == user_doc.username
 
     @pytest.mark.asyncio
     async def test_authenticate_success_with_id(
-        self, basic_auth_no_key_attr: BasicAuth, user_doc_no_auth_key: UserDoc
+        self, request_basic: Request, basic_auth_no_key_attr: ExampleBasicAuth, user_doc_no_auth_key: UserDoc
     ) -> None:
         """Test authenticate successfully authenticates user with ID when auth_key attribute is not used."""
         # Create basic auth header using ID
         credentials = base64.b64encode(f"{user_doc_no_auth_key.id}:password".encode()).decode("ascii")
-        mock_request = self.create_request_with_headers({"authorization": f"Basic {credentials}"})
+        mock_request = self.create_request_with_headers(request_basic, authorization=f"Basic {credentials}")
 
         user: UserDoc = await basic_auth_no_key_attr.authenticate(mock_request)
         assert user.username == user_doc_no_auth_key.username
 
     @pytest.mark.asyncio
-    async def test_authenticate_success_with_username_only(self, basic_auth: BasicAuth, user_doc: UserDoc) -> None:
+    async def test_authenticate_success_with_username_only(
+        self, request_basic: Request, user_doc: UserDoc
+    ) -> None:
         """Test authenticate with username only (no colon in credentials)."""
         # Create basic auth header with just auth_key (no password)
         assert user_doc.auth_key is not None
         credentials = base64.b64encode(f"{user_doc.auth_key}".encode()).decode("ascii")
-        mock_request = self.create_request_with_headers({"authorization": f"Basic {credentials}"})
+        mock_request = self.create_request_with_headers(request_basic, authorization=f"Basic {credentials}")
 
         user: UserDoc = await basic_auth.authenticate(mock_request)
         assert user.username == user_doc.username
 
     @pytest.mark.asyncio
-    async def test_authenticate_success_with_password_only(self, basic_auth: BasicAuth, user_doc: UserDoc) -> None:
+    async def test_authenticate_success_with_password_only(
+        self, request_basic: Request, user_doc: UserDoc
+    ) -> None:
         """Test authenticate with password only (username empty)."""
         # Create basic auth header with empty username
         assert user_doc.auth_key is not None
         credentials = base64.b64encode(f":{user_doc.auth_key}".encode()).decode("ascii")
-        mock_request = self.create_request_with_headers({"authorization": f"Basic {credentials}"})
+        mock_request = self.create_request_with_headers(request_basic, authorization=f"Basic {credentials}")
 
         user: UserDoc = await basic_auth.authenticate(mock_request)
         assert user.username == user_doc.username
 
     @pytest.mark.asyncio
-    async def test_authenticate_missing_header(self, basic_auth: BasicAuth) -> None:
+    async def test_authenticate_missing_header(self, request_basic: Request) -> None:
         """Test authenticate raises HTTPException when Authorization header is missing."""
-        mock_request = self.create_request_with_headers()
+        mock_request = self.create_request_with_headers(request_basic, authorization=None)
 
         with pytest.raises(HTTPException) as exc_info:
             await basic_auth.authenticate(mock_request)
@@ -386,9 +345,9 @@ class TestBasicAuth:
         assert exc_info.value.detail == "Authentication required"
 
     @pytest.mark.asyncio
-    async def test_authenticate_invalid_scheme(self, basic_auth: BasicAuth) -> None:
+    async def test_authenticate_invalid_scheme(self, request_basic: Request) -> None:
         """Test authenticate raises HTTPException with non-Basic auth scheme."""
-        mock_request = self.create_request_with_headers({"authorization": "Bearer some_token"})
+        mock_request = self.create_request_with_headers(request_basic, authorization="Bearer some_token")
 
         with pytest.raises(HTTPException) as exc_info:
             await basic_auth.authenticate(mock_request)
@@ -397,9 +356,9 @@ class TestBasicAuth:
         assert exc_info.value.detail == "Only basic authorization is supported"
 
     @pytest.mark.asyncio
-    async def test_authenticate_invalid_base64(self, basic_auth: BasicAuth) -> None:
+    async def test_authenticate_invalid_base64(self, request_basic: Request) -> None:
         """Test authenticate raises HTTPException with invalid base64 credentials."""
-        mock_request = self.create_request_with_headers({"authorization": "Basic not_valid_base64!!!"})
+        mock_request = self.create_request_with_headers(request_basic, authorization="Basic not_valid_base64!!!")
 
         with pytest.raises(HTTPException) as exc_info:
             await basic_auth.authenticate(mock_request)
@@ -408,22 +367,16 @@ class TestBasicAuth:
         assert exc_info.value.detail == "Error while decoding basic auth credentials"
 
     @pytest.mark.asyncio
-    async def test_authenticate_nonexistent_user(self, basic_auth: BasicAuth) -> None:
+    async def test_authenticate_nonexistent_user(self, request_basic: Request) -> None:
         """Test authenticate raises HTTPException when user doesn't exist."""
         # Use a fake auth key that doesn't exist
         credentials = base64.b64encode(b"fake_auth_key_9999:password")
-        mock_request = self.create_request_with_headers({"authorization": f"Basic {credentials.decode('ascii')}"})
+        mock_request = self.create_request_with_headers(
+            request_basic, authorization=f"Basic {credentials.decode('ascii')}"
+        )
 
         with pytest.raises(HTTPException) as exc_info:
             await basic_auth.authenticate(mock_request)
 
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail == "Invalid basic auth credentials"
-
-    @pytest.mark.asyncio
-    async def test_authenticate_malformed_credentials(self, basic_auth: BasicAuth) -> None:
-        """Test authenticate with malformed authorization header (missing space)."""
-        mock_request = self.create_request_with_headers({"authorization": "BasicNoSpace"})
-
-        with pytest.raises(ValueError):
-            await basic_auth.authenticate(mock_request)

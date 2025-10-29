@@ -111,6 +111,7 @@ class TestPrefetchRelatedChildren:
 
         def filter_expensive(related_items: list[ProductDoc], item: CategoryDoc) -> list[ProductDoc]:
             """Filter only products with price > 100."""
+            assert item is not None
             return [p for p in related_items if p.price > 100]
 
         # Get fresh categories from DB
