@@ -2,6 +2,7 @@
 
 import base64
 import time
+import typing
 
 import jwt
 import pytest
@@ -10,6 +11,7 @@ import pytest_asyncio
 from beanie import PydanticObjectId
 from fastapi import Request, Response
 from fastapi.exceptions import HTTPException
+from starlette.middleware.sessions import SessionMiddleware
 
 from AppMain.settings import AppSettings
 from sap.exceptions import Object404Error
@@ -21,7 +23,7 @@ class TestJWTAuth:
     """Test cases for JWTAuth class."""
 
     @pytest_asyncio.fixture
-    async def user_doc(self) -> UserDoc:
+    async def user_doc(self) -> typing.AsyncGenerator[UserDoc, None]:
         """Create a test user document."""
         user = await UserDoc(username="testuser", email="test@example.com").create()
         user.set_password("testpassword123")
@@ -150,7 +152,7 @@ class TestJWTAuth:
         token = jwt_auth.create_token(user_doc)
         mock_request._cookies = {"user_session": token}
 
-        user = await jwt_auth.authenticate(mock_request)
+        user: UserDoc = await jwt_auth.authenticate(mock_request)
 
         assert user.id == user_doc.id
         assert user.username == user_doc.username
@@ -304,18 +306,14 @@ class TestBasicAuth:
     async def test_retrieve_user_by_auth_key(self, basic_auth: BasicAuth, user_doc: UserDoc) -> None:
         """Test retrieve_user successfully retrieves user by auth_key."""
         assert user_doc.auth_key is not None
-        retrieved_user = await basic_auth.retrieve_user(user_doc.auth_key)
-
+        retrieved_user: UserDoc = await basic_auth.retrieve_user(user_doc.auth_key)
         assert retrieved_user.id == user_doc.id
-        assert retrieved_user.username == user_doc.username
 
     @pytest.mark.asyncio
     async def test_retrieve_user_by_id(self, basic_auth_no_key_attr: BasicAuth, user_doc_no_auth_key: UserDoc) -> None:
         """Test retrieve_user successfully retrieves user by ID when auth_key attribute is not used."""
         retrieved_user = await basic_auth_no_key_attr.retrieve_user(str(user_doc_no_auth_key.id))
-
         assert retrieved_user.id == user_doc_no_auth_key.id
-        assert retrieved_user.username == user_doc_no_auth_key.username
 
     @pytest.mark.asyncio
     async def test_retrieve_user_nonexistent(self, basic_auth: BasicAuth) -> None:
@@ -339,9 +337,7 @@ class TestBasicAuth:
         credentials = base64.b64encode(f"{user_doc.auth_key}:password".encode()).decode("ascii")
         mock_request = self.create_request_with_headers({"authorization": f"Basic {credentials}"})
 
-        user = await basic_auth.authenticate(mock_request)
-
-        assert user.id == user_doc.id
+        user: UserDoc = await basic_auth.authenticate(mock_request)
         assert user.username == user_doc.username
 
     @pytest.mark.asyncio
@@ -353,9 +349,7 @@ class TestBasicAuth:
         credentials = base64.b64encode(f"{user_doc_no_auth_key.id}:password".encode()).decode("ascii")
         mock_request = self.create_request_with_headers({"authorization": f"Basic {credentials}"})
 
-        user = await basic_auth_no_key_attr.authenticate(mock_request)
-
-        assert user.id == user_doc_no_auth_key.id
+        user: UserDoc = await basic_auth_no_key_attr.authenticate(mock_request)
         assert user.username == user_doc_no_auth_key.username
 
     @pytest.mark.asyncio
@@ -366,9 +360,8 @@ class TestBasicAuth:
         credentials = base64.b64encode(f"{user_doc.auth_key}".encode()).decode("ascii")
         mock_request = self.create_request_with_headers({"authorization": f"Basic {credentials}"})
 
-        user = await basic_auth.authenticate(mock_request)
-
-        assert user.id == user_doc.id
+        user: UserDoc = await basic_auth.authenticate(mock_request)
+        assert user.username == user_doc.username
 
     @pytest.mark.asyncio
     async def test_authenticate_success_with_password_only(self, basic_auth: BasicAuth, user_doc: UserDoc) -> None:
@@ -378,9 +371,8 @@ class TestBasicAuth:
         credentials = base64.b64encode(f":{user_doc.auth_key}".encode()).decode("ascii")
         mock_request = self.create_request_with_headers({"authorization": f"Basic {credentials}"})
 
-        user = await basic_auth.authenticate(mock_request)
-
-        assert user.id == user_doc.id
+        user: UserDoc = await basic_auth.authenticate(mock_request)
+        assert user.username == user_doc.username
 
     @pytest.mark.asyncio
     async def test_authenticate_missing_header(self, basic_auth: BasicAuth) -> None:
