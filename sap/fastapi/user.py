@@ -16,7 +16,7 @@ class UserMixin:
             return True
         return self.role == perm
 
-    def has_perms(self, perms: str) -> bool:
+    def has_perms(self, perms: list[str]) -> bool:
         """Check if the user has access to any of the provided permissions."""
         return any(self.has_perm(perm) for perm in perms)
 

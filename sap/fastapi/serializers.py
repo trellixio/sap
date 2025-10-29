@@ -209,7 +209,9 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
     """Serialize an object for create or update."""
 
     _instance: Optional[AlchemyOrPydanticModelT] = PrivateAttr(default=None)
-    embedded_serializers: ClassVar[dict[str, type[BaseModel]]] = {}
+
+    _embedded_serializers: ClassVar[dict[str, type[BaseModel]]] = {}
+    _document_fields: ClassVar[set[str]] = set()
 
     @property
     def instance(self) -> Optional[AlchemyOrPydanticModelT]:
@@ -221,13 +223,21 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         """Set the instance."""
         self._instance = instance
 
-    def __init__(self, instance: Optional[AlchemyOrPydanticModelT] = None, **data: Any) -> None:
-        """Override init to filter embedded serializers."""
+    def __init__(self, instance: AlchemyOrPydanticModelT | None = None, **data: Any) -> None:
+        """Initialize with instance."""
         super().__init__(**data)
         self._instance = instance
-        for field_name, field_info in type(self).model_fields.items():
-            if inspect.isclass(field_info.annotation) and issubclass(field_info.annotation, WriteObjectSerializer):
-                self.embedded_serializers[field_name] = field_info.annotation
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """On subclass initialization, collect embedded serializers."""
+        super().__init_subclass__(**kwargs)
+        cls._embedded_serializers = {}
+        for field_name, field_info in cls.model_fields.items():
+            if inspect.isclass(field_info.annotation):
+                if issubclass(field_info.annotation, WriteObjectSerializer):
+                    cls._embedded_serializers[field_name] = field_info.annotation
+                if issubclass(field_info.annotation, Document):
+                    cls._document_fields.add(field_name)
 
     @overload
     async def run_async_validators(self, *, db: "AsyncSession", **kwargs: Any) -> None:
@@ -242,7 +252,7 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
         # Automatically run async validators on embedded serializers
         field_serializer: WriteObjectSerializer[AlchemyOrPydanticModelT]
-        for field_name in self.embedded_serializers:
+        for field_name in self._embedded_serializers:
             if field_serializer := getattr(self, field_name):
                 if self.instance:
                     field_serializer.instance = getattr(self.instance, field_name)
@@ -266,17 +276,13 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         """Dump the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
         exclude = exclude or set()
+        exclude |= self._document_fields
         exclude.add("instance")  # type: ignore
         exclude.add("_instance")  # type: ignore
 
         # # Some fields are only excluded from being cascade dumps to dict,
         # # but their original value is still needed
         # exclude_doc_dumps = {}
-
-        for field_name, field_info in type(self).model_fields.items():
-            if inspect.isclass(field_info.annotation) and issubclass(field_info.annotation, Document):
-                # exclude_doc_dumps[field_name] = True
-                exclude.add(field_name)  # type: ignore
 
         result = super().model_dump(
             mode=mode,
@@ -296,13 +302,13 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         #     result[field_name] = getattr(self, field_name)
 
         instance_embedded: Optional[BaseModel]
-        for field_name, field_model in self.embedded_serializers.items():
+        for field_name, field_model in self._embedded_serializers.items():
             if not result[field_name]:
                 continue
             if instance_embedded := getattr(self.instance, field_name, None):
-                result[field_name] = instance_embedded.model_copy(update=result[field_name])
+                result[field_name] = instance_embedded.model_copy(update=result[field_name]).model_dump()
             else:
-                result[field_name] = field_model(**result[field_name])
+                result[field_name] = field_model(**result[field_name]).model_dump()
 
         return result
 
