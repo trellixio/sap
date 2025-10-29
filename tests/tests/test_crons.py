@@ -2,7 +2,6 @@
 
 import pytest
 
-from beanie import PydanticObjectId
 from beanie.odm.queries.find import FindMany
 
 from sap.tests.crons import get_filter_queryset_dummy, get_filter_queryset_for_merchant

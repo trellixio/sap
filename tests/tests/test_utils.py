@@ -19,7 +19,7 @@ def test_generate_random_email() -> None:
     email = generate_random_email()
     assert "@yopmail.net" in email
     assert email.startswith("trellis-test.")
-    assert len(email.split("@")[0]) == 9 + len("trellis-test.")
+    assert len(email.split("@", maxsplit=1)[0]) == 9 + len("trellis-test.")
 
 
 def test_generate_random_email_custom_domain() -> None:
@@ -32,7 +32,7 @@ def test_generate_random_email_custom_domain() -> None:
 def test_generate_random_email_custom_length() -> None:
     """Test generate_random_email with custom length."""
     email = generate_random_email(length=15)
-    local_part = email.split("@")[0]
+    local_part = email.split("@", maxsplit=1)[0]
     assert len(local_part) == 15 + len("trellis-test.")
 
 

@@ -284,9 +284,7 @@ class TestBasicAuth:
             await basic_auth_no_model.retrieve_user("test_key")
 
     @pytest.mark.asyncio
-    async def test_authenticate_success_with_auth_key(
-        self, request_basic: Request, user_doc: UserDoc
-    ) -> None:
+    async def test_authenticate_success_with_auth_key(self, request_basic: Request, user_doc: UserDoc) -> None:
         """Test authenticate successfully authenticates user with auth_key."""
         # Create basic auth header using auth_key
         assert user_doc.auth_key is not None
@@ -308,9 +306,7 @@ class TestBasicAuth:
         assert user.username == user_doc_no_auth_key.username
 
     @pytest.mark.asyncio
-    async def test_authenticate_success_with_username_only(
-        self, request_basic: Request, user_doc: UserDoc
-    ) -> None:
+    async def test_authenticate_success_with_username_only(self, request_basic: Request, user_doc: UserDoc) -> None:
         """Test authenticate with username only (no colon in credentials)."""
         # Create basic auth header with just auth_key (no password)
         assert user_doc.auth_key is not None
@@ -321,9 +317,7 @@ class TestBasicAuth:
         assert user.username == user_doc.username
 
     @pytest.mark.asyncio
-    async def test_authenticate_success_with_password_only(
-        self, request_basic: Request, user_doc: UserDoc
-    ) -> None:
+    async def test_authenticate_success_with_password_only(self, request_basic: Request, user_doc: UserDoc) -> None:
         """Test authenticate with password only (username empty)."""
         # Create basic auth header with empty username
         assert user_doc.auth_key is not None

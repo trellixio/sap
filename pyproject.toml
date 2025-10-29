@@ -135,5 +135,6 @@ exclude_lines = [
     'def __repr__',
     'def __str__',
     'if typing\.TYPE_CHECKING',
+    'if TYPE_CHECKING',
     'NotImplementedError',
 ]

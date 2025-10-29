@@ -1,3 +1,5 @@
+"""Contests for testing REST helper functions."""
+
 import typing
 
 from beanie import PydanticObjectId
