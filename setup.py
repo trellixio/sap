@@ -38,7 +38,7 @@ setup(
         "motor~=3.6",
         "pydantic~=2.9.2",
         "beanie~=1.27.0",
-        "fastapi~=0.115",
+        "fastapi~=0.120",
         "redis~=5.1",
         "celery~=5.4",
     ],

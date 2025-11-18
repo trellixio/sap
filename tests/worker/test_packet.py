@@ -2,6 +2,7 @@ import asyncio
 import json
 import time
 
+# TODO: Replace aioamqp (deprecated) with aio-pika
 import aioamqp.channel
 import aioamqp.envelope
 import aioamqp.exceptions
