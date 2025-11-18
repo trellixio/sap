@@ -1,0 +1,202 @@
+# Github Action Workflow
+# ----------------------
+# This file helps automate actions that will be automatically
+# performed by Github before the code is merged to production.
+# The code will be automatically linted and testing and ensure that the
+# quality meets the expectation and that silly bugs can be easily catch.
+# Of course this does not remove the need to always manual test the application.
+
+name: Linting & Testing
+
+on:
+  workflow_run:
+    workflows: ["Merge to staging"]
+    types:
+      - completed
+  push:
+    branches:
+      - staging
+  # pull_request:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.12]
+        redis-version: [8]
+        mongodb-version: [8.0]
+        rabbitmq-version: [4.1]
+    outputs:
+      test_results: ${{ join(steps.run_tests.outputs.*, '\n') }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: 'staging'
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          cache: 'pip'
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        id: install_dependencirs
+        run: |
+          pip install -r requirements-dev.txt
+
+      - name: Start Redis
+        id: redis_server
+        uses: supercharge/redis-github-action@1.7.0
+        with:
+          redis-version: ${{ matrix.redis-version }}
+          redis-port: 6379
+
+      - name: Start MongoDB
+        id: mongo_server
+        uses: supercharge/mongodb-github-action@1.10.0
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
+          mongodb-port: 27017
+          # mongodb-db: trellis_test
+
+      - name: Start RabbitMQ
+        id: rabbitmq_server
+        uses: mer-team/rabbitmq-mng-action@v1.2
+        with:
+          RABBITMQ_TAG: ${{ matrix.rabbitmq-version }}
+          RABBITMQ_PORT: 5672
+          RABBITMQ_MNG_PORT: 15672
+
+      - name: create env file
+        id: create_env
+        env:
+          DEV_SECRETS: ${{ secrets.ENV_TEST }}
+        run: |
+          touch .env && echo "$DEV_SECRETS" > .env
+
+      - name: Add short sha in outputs
+        id: vars
+        run: echo "GITHUB_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: migration database
+        id: migrate_database
+        run: |
+          echo "Migrating database" && python migrate.py
+
+      - name: run isort
+        id: run_isort
+        if: success() || failure()
+        run: |
+          if isort --check .; then
+            output=":white_check_mark:"
+            echo "ISSORT_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            output=":x:"
+            echo "ISSORT_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+      - name: run black
+        id: run_black
+        if: success() || failure()
+        run : |
+          if black --check .; then
+            output=":white_check_mark:"
+            echo "BLACK_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            output=":x:"
+            echo "BLACK_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: run mypy
+        id: run_mypy
+        if: success() || failure()
+        run : |
+          if mypy .; then
+            output=":white_check_mark:"
+            echo "MYPY_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            output=":x:"
+            echo "MYPY_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: run pydocstyle
+        id: run_pydocstyle
+        if: success() || failure()
+        run :  |
+          if pydocstyle .; then
+            output=":white_check_mark:"
+            echo "PYDOCSTYLE_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            output=":x:"
+            echo "PYDOCSTYLE_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: run pylint
+        id: run_pylint
+        if: success() || failure()
+        run : |
+          if pylint AppMain sap tests; then
+            output=":white_check_mark:"
+            echo "PYLINT_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            output=":x:"
+            echo "PYLINT_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name:  Check all file and  run unit tests
+        id:  run_tests
+        if: success() || failure()
+        run: |
+          if pytest -q > result.log; then
+            output=":white_check_mark:"
+            result=$(cat result.log | tail -n 1)
+            echo "PYTEST_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            echo "PYTEST_RESULT=$result" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            output=":x:"
+            result=$(cat result.log | tail -n 1)
+            echo "PYTEST_OUTPUT=$output" >> "$GITHUB_OUTPUT"
+            echo "PYTEST_RESULT=$result" >> "$GITHUB_OUTPUT"
+            cat result.log
+            exit 1
+          fi
+
+      - name: Post to a Slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        if: success() || failure()
+        with:
+          payload: |
+           {
+              "text": "SAP: Testing action ${{ job.status }} for commit `${{github.event.head_commit.id}}`",
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "*SAP* · Action ${{ job.status }}\nRunning testing action <${{github.server_url}}/${{github.repository}}/actions/runs/${{ github.run_id}}|`${{ github.run_id}}`> on commit `${{ steps.vars.outputs.GITHUB_SHA_SHORT }}`.\n${{ steps.run_isort.outputs.ISSORT_OUTPUT}}  ················· Isort\n${{ steps.run_black.outputs.BLACK_OUTPUT}}  ················· Black\n${{ steps.run_mypy.outputs.MYPY_OUTPUT}}  ················· MyPy\n${{ steps.run_pydocstyle.outputs.PYDOCSTYLE_OUTPUT}}  ················· Pydocstyle\n${{ steps.run_pylint.outputs.PYLINT_OUTPUT}}  ················· Pylint\n${{ steps.run_tests.outputs.PYTEST_OUTPUT}}  ················· Pytest\n==========  Result  ==========\n${{steps.run_tests.outputs.PYTEST_RESULT}}"
+                      }
+                  }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TITLE: CI Test Suite
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+

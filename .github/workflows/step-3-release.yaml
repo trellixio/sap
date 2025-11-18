@@ -5,11 +5,13 @@
 name: 'Merge to release'
 
 on:
-  push:
-    branches: [staging]
+  workflow_run:
+    workflows: ["Linting & Testing"]
+    types:
+      - completed
 
 jobs:
-  merge:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout release branch
