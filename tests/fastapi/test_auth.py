@@ -10,7 +10,7 @@ import pytest
 import pytest_asyncio
 
 from beanie import PydanticObjectId
-from fastapi import Request, Response
+from fastapi import Request, Response, status
 from fastapi.exceptions import HTTPException
 
 from AppMain.settings import AppSettings
@@ -149,7 +149,7 @@ class TestJWTAuth:
         with pytest.raises(HTTPException) as exc_info:
             await jwt_auth.authenticate(request_basic)
 
-        assert exc_info.value.status_code == 307
+        assert exc_info.value.status_code == status.HTTP_303_SEE_OTHER
         assert exc_info.value.headers is not None
         assert exc_info.value.headers["Location"] == "/pages/auth/login/"
 
@@ -161,7 +161,7 @@ class TestJWTAuth:
         with pytest.raises(HTTPException) as exc_info:
             await jwt_auth.authenticate(request_basic)
 
-        assert exc_info.value.status_code == 307
+        assert exc_info.value.status_code == status.HTTP_303_SEE_OTHER
         assert exc_info.value.headers is not None
         assert exc_info.value.headers["Location"] == "/pages/auth/login/"
 
@@ -180,7 +180,7 @@ class TestJWTAuth:
         with pytest.raises(HTTPException) as exc_info:
             await jwt_auth.authenticate(request_basic)
 
-        assert exc_info.value.status_code == 307
+        assert exc_info.value.status_code == status.HTTP_303_SEE_OTHER
         assert exc_info.value.headers is not None
         assert "Location" in exc_info.value.headers
 
@@ -197,7 +197,7 @@ class TestJWTAuth:
         with pytest.raises(HTTPException) as exc_info:
             await jwt_auth.authenticate(request_basic)
 
-        assert exc_info.value.status_code == 307
+        assert exc_info.value.status_code == status.HTTP_303_SEE_OTHER
         assert exc_info.value.headers is not None
         assert "Location" in exc_info.value.headers
 

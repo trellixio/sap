@@ -83,11 +83,6 @@ jobs:
         id: vars
         run: echo "GITHUB_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: migration database
-        id: migrate_database
-        run: |
-          echo "Migrating database" && python migrate.py
-
       - name: run isort
         id: run_isort
         if: success() || failure()
