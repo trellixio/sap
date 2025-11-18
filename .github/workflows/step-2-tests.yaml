@@ -155,7 +155,7 @@ jobs:
             exit 1
           fi
 
-      - name:  Check all file and  run unit tests
+      - name:  Run unit tests
         id:  run_tests
         if: success() || failure()
         run: |
