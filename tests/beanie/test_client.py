@@ -1,5 +1,7 @@
 """Tests for BeanieClient class."""
 
+import os
+
 import pytest
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -25,8 +27,9 @@ async def test_init_creates_connection(document_models: list[type[Document]]) ->
 
     await BeanieClient.init(AppSettings.MONGO, document_models)
 
-    assert "default" in BeanieClient.connections
-    assert isinstance(BeanieClient.connections["default"].database, AsyncIOMotorDatabase)
+    connection_name, connection = next(iter(BeanieClient.connections.items()))
+    assert connection_name == f"default_{os.getpid()}"
+    assert isinstance(connection.database, AsyncIOMotorDatabase)
 
 
 @pytest.mark.asyncio
@@ -50,11 +53,13 @@ async def test_init_force_recreates_connection(document_models: list[type[Docume
 
     # Create initial connection
     await BeanieClient.init(AppSettings.MONGO, document_models)
-    first_db: AsyncIOMotorDatabase = BeanieClient.connections["default"].database
+    _, connection = next(iter(BeanieClient.connections.items()))
+    first_db: AsyncIOMotorDatabase = connection.database
 
     # Force recreate connection
     await BeanieClient.init(AppSettings.MONGO, document_models, force=True)
-    second_db: AsyncIOMotorDatabase = BeanieClient.connections["default"].database
+    _, connection = next(iter(BeanieClient.connections.items()))
+    second_db: AsyncIOMotorDatabase = connection.database
 
     # assert first_db != second_db
     assert isinstance(first_db, AsyncIOMotorDatabase)
@@ -69,10 +74,12 @@ async def test_init_reuses_existing_connection(document_models: list[type[Docume
 
     # Create initial connection
     await BeanieClient.init(AppSettings.MONGO, document_models)
-    first_db: AsyncIOMotorDatabase = BeanieClient.connections["default"].database
+    _, connection = next(iter(BeanieClient.connections.items()))
+    first_db: AsyncIOMotorDatabase = connection.database
 
     # Try to create new connection without force
     await BeanieClient.init(AppSettings.MONGO, document_models)
-    second_db: AsyncIOMotorDatabase = BeanieClient.connections["default"].database
+    _, connection = next(iter(BeanieClient.connections.items()))
+    second_db: AsyncIOMotorDatabase = connection.database
 
     assert first_db == second_db

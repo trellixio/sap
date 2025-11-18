@@ -196,4 +196,3 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: CI Test Suite
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-

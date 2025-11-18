@@ -66,12 +66,12 @@ class BeanieClient:
             try:
                 # Use a timeout for ping to avoid hanging
                 await asyncio.wait_for(database.command("ping"), timeout=2.0)
-            except (pymongo.errors.ConnectionFailure, asyncio.TimeoutError, Exception) as exc:
-                logger.debug(f"--> MongoDB connection {connection_name} ping failed: {exc}, reinitializing")
+            except (pymongo.errors.ConnectionFailure, asyncio.TimeoutError) as exc:
+                logger.debug("--> MongoDB connection %s ping failed: %s, reinitializing", connection_name, str(exc))
                 # Close the old client before creating a new one
                 try:
                     cls.connections[connection_name].client.close()
-                except Exception:
+                except pymongo.errors.PyMongoError:
                     pass
                 del cls.connections[connection_name]
             else:
@@ -95,4 +95,4 @@ class BeanieClient:
         database = client[mongo_params.db]
         cls.connections[connection_name] = MongoConnection(client=client, database=database, pid=current_pid)
         await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=True)
-        logger.debug(f"--> Establishing new MongoDB connection (PID: {current_pid})")
+        logger.debug("--> Establishing new MongoDB connection (PID: %s)", current_pid)
