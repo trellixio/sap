@@ -71,6 +71,8 @@ jobs:
           RABBITMQ_TAG: ${{ matrix.rabbitmq-version }}
           RABBITMQ_PORT: 5672
           RABBITMQ_MNG_PORT: 15672
+          RABBITMQ_USER: "guest"
+          RABBITMQ_PASS: "guest"
 
       - name: create env file
         id: create_env
