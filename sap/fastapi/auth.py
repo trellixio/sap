@@ -19,10 +19,9 @@ from pydantic import BaseModel
 
 # from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
 # from starlette.requests import HTTPConnection
-from starlette.status import HTTP_307_TEMPORARY_REDIRECT as HTTP_307
+from starlette.status import HTTP_303_SEE_OTHER as HTTP_303
 from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401
 
-from AppMain.settings import AppSettings
 from sap.beanie.document import Document
 from sap.exceptions import Object404Error
 
@@ -41,6 +40,7 @@ class JWTAuth:
     auth_login_url: ClassVar[str] = "/pages/auth/login/"
     auth_cookie_key: ClassVar[str] = "user_session"
     auth_cookie_expires: ClassVar[int] = 60 * 60 * 12  # expiration = 12 hours
+    crypto_secret: str = "xxx-xxxxxxxxx-xxxxxx"
     user_model: type[Document]
 
     def __init__(self, user_model: type[UserT]) -> None:
@@ -67,7 +67,7 @@ class JWTAuth:
         """Get JWT temporary token."""
         expires = self.get_auth_cookie_expires()
         jwt_data = {"exp": int(time.time()) + expires, "user_id": str(user.id)}
-        return jwt.encode(payload=jwt_data, key=AppSettings.CRYPTO_SECRET, algorithm="HS256")
+        return jwt.encode(payload=jwt_data, key=self.crypto_secret, algorithm="HS256")
 
     async def find_user(self, jwt_token: str) -> Document:
         """
@@ -77,7 +77,7 @@ class JWTAuth:
         """
 
         # Raises: jwt.exceptions.InvalidTokenError => Token has expired or is invalid
-        jwt_data = jwt.decode(jwt_token, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
+        jwt_data = jwt.decode(jwt_token, key=self.crypto_secret, algorithms=["HS256"])
         if "user_id" not in jwt_data:
             raise jwt.exceptions.InvalidAudienceError("Cannot read user_id.")
 
@@ -103,12 +103,12 @@ class JWTAuth:
         try:
             jwt_token = request.cookies[self.get_auth_cookie_key(request)]
         except KeyError as exc:
-            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url(request)}) from exc
+            raise HTTPException(HTTP_303, headers={"Location": self.get_auth_login_url(request)}) from exc
 
         try:
             return await self.find_user(jwt_token=jwt_token)
         except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
-            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url(request)}) from exc
+            raise HTTPException(HTTP_303, headers={"Location": self.get_auth_login_url(request)}) from exc
 
 
 # class JWTAuthBackend(AuthenticationBackend, JWTAuth):
@@ -123,7 +123,7 @@ class JWTAuth:
 #         jwt_cookie = request.cookies[cookie_key]
 
 #         try:
-#             jwt_data = jwt.decode(jwt_cookie, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
+#             jwt_data = jwt.decode(jwt_cookie, key=self.crypto_secret, algorithms=["HS256"])
 #         except jwt.exceptions.InvalidTokenError as exc:
 #             raise AuthenticationError("Invalid JWT token") from exc
 
