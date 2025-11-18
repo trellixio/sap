@@ -7,6 +7,7 @@ Initialize connection to the Mongo Database.
 from __future__ import annotations
 
 import asyncio
+import os
 import typing
 from dataclasses import dataclass
 from typing import List, Type
@@ -26,6 +27,7 @@ class MongoConnection:
 
     client: AsyncIOMotorClient
     database: AsyncIOMotorDatabase
+    pid: int  # Track which process created this connection
 
 
 class BeanieClient:
@@ -36,7 +38,7 @@ class BeanieClient:
     @classmethod
     async def get_db_default(cls) -> AsyncIOMotorDatabase:
         """Return the default db connection."""
-        return cls.connections["default"].database
+        return cls.connections[f"default_{os.getpid()}"].database
 
     @classmethod
     async def init(
@@ -49,23 +51,48 @@ class BeanieClient:
         """Open and maintain a connection to the database.
 
         :force bool: Use it for force a connection initialization
-        """
 
-        if "default" in cls.connections and not force:
-            database: AsyncIOMotorDatabase = cls.connections["default"].database
+        CRITICAL: Detects forked processes (Gunicorn workers) and automatically
+        reinitializes connections since Motor's AsyncIOMotorClient is NOT fork-safe.
+        """
+        current_pid = os.getpid()
+        connection_name = f"default_{current_pid}"
+
+        if connection_name in cls.connections and not force:
+            # Check if we're in a forked process (different PID)
+            # Same process, check if connection is still healthy
+            database: AsyncIOMotorDatabase = cls.connections[connection_name].database
 
             try:
-                await database.command("ping")
-            except pymongo.errors.ConnectionFailure:
-                logger.debug("--> Invalidate existing MongoDB connection")
+                # Use a timeout for ping to avoid hanging
+                await asyncio.wait_for(database.command("ping"), timeout=2.0)
+            except (pymongo.errors.ConnectionFailure, asyncio.TimeoutError, Exception) as exc:
+                logger.debug(f"--> MongoDB connection {connection_name} ping failed: {exc}, reinitializing")
+                # Close the old client before creating a new one
+                try:
+                    cls.connections[connection_name].client.close()
+                except Exception:
+                    pass
+                del cls.connections[connection_name]
             else:
-                logger.debug("--> Using existing MongoDB connection")
+                # Connection is healthy, no need to reinitialize
                 return
 
-        client = AsyncIOMotorClient(mongo_params.get_dns())
+        # Configure connection pool settings for production stability
+        client = AsyncIOMotorClient(
+            mongo_params.get_dns(),
+            maxPoolSize=50,  # Reasonable pool size for multiple workers
+            minPoolSize=5,  # Keep some connections warm
+            maxIdleTimeMS=45000,  # Close idle connections after 45s
+            serverSelectionTimeoutMS=5000,  # Fail fast if server unavailable
+            connectTimeoutMS=10000,  # 10s connection timeout
+            socketTimeoutMS=30000,  # 30s socket timeout
+            retryWrites=True,  # Retry writes on network errors
+            retryReads=True,  # Retry reads on network errors
+        )
         # if hijack_motor_loop:
         client.get_io_loop = asyncio.get_running_loop  # type: ignore
         database = client[mongo_params.db]
-        cls.connections["default"] = MongoConnection(client=client, database=database)
+        cls.connections[connection_name] = MongoConnection(client=client, database=database, pid=current_pid)
         await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=True)
-        logger.info("--> Establishing new MongoDB connection")
+        logger.debug(f"--> Establishing new MongoDB connection (PID: {current_pid})")

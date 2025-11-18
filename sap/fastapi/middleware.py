@@ -8,7 +8,7 @@ Learn more: https://fastapi.tiangolo.com/tutorial/middleware/
 from __future__ import annotations
 
 import traceback
-from typing import Awaitable, Callable, List, Type
+from typing import Awaitable, Callable, ClassVar, List, Type
 
 import beanie
 from fastapi import Request
@@ -51,6 +51,7 @@ class InitBeanieMiddleware:
     mongo_params: DatabaseParams
     document_models: List[Type[beanie.Document]] | List[Type[beanie.View]] | List[str]
     force: bool = False
+    beanie_client_class: ClassVar[Type[BeanieClient]] = BeanieClient
 
     def __init__(
         self,
@@ -67,7 +68,7 @@ class InitBeanieMiddleware:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Run Middleware."""
-        await BeanieClient.init(
+        await self.beanie_client_class.init(
             mongo_params=self.mongo_params,
             document_models=self.document_models,
             force=self.force,
