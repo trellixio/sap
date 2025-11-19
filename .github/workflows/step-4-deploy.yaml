@@ -44,7 +44,7 @@ jobs:
     name: Release pushed tag
     needs: check_version
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && needs.check_version.outputs.tag_exists == 'false' }}
+    if: ${{ (github.event_name == 'push' || github.event.workflow_run.conclusion == 'success') && needs.check_version.outputs.tag_exists == 'false' }}
     steps:
       - name: Checkout release branch
         uses: actions/checkout@v4
