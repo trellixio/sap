@@ -25,7 +25,7 @@ jobs:
       - name: Get Version
         id: get_version
         run: |
-          VERSION=$(python -c "import setup; print(setup.VERSION)")
+          VERSION=$(grep -E '^VERSION = ' setup.py | cut -d'"' -f2)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
       - name: Check if tag exists
