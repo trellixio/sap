@@ -75,6 +75,8 @@ class BeanieClient:
                     pass
                 del cls.connections[connection_name]
             else:
+                logger.debug("--> MongoDB connection %s is healthy", connection_name)
+                # await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=False)
                 # Connection is healthy, no need to reinitialize
                 return
 
@@ -94,5 +96,5 @@ class BeanieClient:
         client.get_io_loop = asyncio.get_running_loop  # type: ignore
         database = client[mongo_params.db]
         cls.connections[connection_name] = MongoConnection(client=client, database=database, pid=current_pid)
-        await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=True)
+        await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=False)
         logger.debug("--> Establishing new MongoDB connection (PID: %s)", current_pid)
