@@ -8,16 +8,16 @@ import pytest_asyncio
 from tests.samples import UserDoc
 
 
-@pytest_asyncio.fixture
-async def user_admin_doc() -> typing.AsyncGenerator[UserDoc, None]:
+@pytest_asyncio.fixture(name="user_admin_doc")
+async def fixture_user_admin_doc() -> typing.AsyncGenerator[UserDoc, None]:
     """Create a test user document."""
     user = await UserDoc(role="admin", username="testuser", email="test@example.com").create()
     yield user
     await user.delete()
 
 
-@pytest_asyncio.fixture
-async def user_viewer_doc() -> typing.AsyncGenerator[UserDoc, None]:
+@pytest_asyncio.fixture(name="user_viewer_doc")
+async def fixture_user_viewer_doc() -> typing.AsyncGenerator[UserDoc, None]:
     """Create a test user document."""
     user = await UserDoc(role="viewer", username="testuser", email="test@example.com").create()
     yield user

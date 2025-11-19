@@ -13,8 +13,8 @@ from tests.samples import DummyDoc
 # from beanie import Document
 
 
-@pytest.fixture
-def document_models() -> list[type[Document]]:
+@pytest.fixture(name="document_models")
+def fixture_document_models() -> list[type[Document]]:
     """Return test document models."""
     return [DummyDoc]
 
