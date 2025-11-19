@@ -6,11 +6,11 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Upload Python Package
+name: 'step-4-publish'
 
 on:
   workflow_run:
-    workflows: ["Create Release Version"]
+    workflows: ["step-3-release"]
     types:
       - completed
   release:

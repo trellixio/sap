@@ -6,11 +6,11 @@
 # quality meets the expectation and that silly bugs can be easily catch.
 # Of course this does not remove the need to always manual test the application.
 
-name: Linting & Testing
+name: 'step-2-tests'
 
 on:
   workflow_run:
-    workflows: ["Merge to staging"]
+    workflows: ["step-1-stage"]
     types:
       - completed
   push:

@@ -2,7 +2,7 @@
 # ----------------------
 # This file helps automate the merging of the main branch to staging.
 
-name: 'Merge to staging'
+name: 'step-1-stage'
 
 on:
   push:
