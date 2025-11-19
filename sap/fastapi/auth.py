@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 # from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
 # from starlette.requests import HTTPConnection
-from starlette.status import HTTP_303_SEE_OTHER as HTTP_303
+from starlette.status import HTTP_307_TEMPORARY_REDIRECT as HTTP_307
 from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401
 
 from sap.beanie.document import Document
@@ -103,12 +103,12 @@ class JWTAuth:
         try:
             jwt_token = request.cookies[self.get_auth_cookie_key(request)]
         except KeyError as exc:
-            raise HTTPException(HTTP_303, headers={"Location": self.get_auth_login_url(request)}) from exc
+            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url(request)}) from exc
 
         try:
             return await self.find_user(jwt_token=jwt_token)
         except (Object404Error, jwt.exceptions.InvalidTokenError) as exc:
-            raise HTTPException(HTTP_303, headers={"Location": self.get_auth_login_url(request)}) from exc
+            raise HTTPException(HTTP_307, headers={"Location": self.get_auth_login_url(request)}) from exc
 
 
 # class JWTAuthBackend(AuthenticationBackend, JWTAuth):
