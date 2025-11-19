@@ -113,6 +113,14 @@ jobs:
             exit 1
           fi
 
+      - name: Cache mypy
+        uses: actions/cache@v3
+        with:
+          path: .mypy_cache
+          key: ${{ runner.os }}-mypy-${{ hashFiles('**/*.py') }}
+          restore-keys: |
+            ${{ runner.os }}-mypy-
+
       - name: run mypy
         id: run_mypy
         if: success() || failure()
