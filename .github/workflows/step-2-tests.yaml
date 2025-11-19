@@ -145,7 +145,7 @@ jobs:
         id: run_pylint
         if: success() || failure()
         run : |
-          if pylint AppMain sap tests; then
+          if pylint --jobs 0 AppMain sap tests; then
             output=":white_check_mark:"
             echo "PYLINT_OUTPUT=$output" >> "$GITHUB_OUTPUT"
             exit 0
