@@ -17,7 +17,7 @@ RDocT = TypeVar("RDocT", bound=Document)  # Related Model Type
 
 async def prefetch_related(item_list: list[DocT], to_attribute: str) -> None:
     """
-    Optimize fetching of a related attribute of one-to-one relation.
+    Optimize fetching of a related attribute of foreign key relation.
 
     Fetch related attribute efficiently in order to avoid multiple queries that could kill the db.
 

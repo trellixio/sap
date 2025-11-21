@@ -25,12 +25,12 @@ from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401
 from sap.beanie.document import Document
 from sap.exceptions import Object404Error
 
-UserT = TypeVar("UserT", bound=Document)
+# UserT = TypeVar("UserT", bound=Document)
 # UserViewT: typing_extensions.TypeAlias = Union[Document, BaseModel, object]
 UserViewT = TypeVar("UserViewT", bound=Union[Document, BaseModel, object])
 
 
-class JWTAuth:
+class JWTAuth(Generic[UserViewT]):
     """JWT cookie authentication utils.
 
     This can be used to login/logout user with persistent sessions.
@@ -41,9 +41,9 @@ class JWTAuth:
     auth_cookie_key: ClassVar[str] = "user_session"
     auth_cookie_expires: ClassVar[int] = 60 * 60 * 12  # expiration = 12 hours
     crypto_secret: ClassVar[str] = "xxx-xxxxxxxxx-xxxxxx"
-    user_model: type[Document]
+    user_model: type[UserViewT]
 
-    def __init__(self, user_model: type[UserT]) -> None:
+    def __init__(self, user_model: type[UserViewT]) -> None:
         """Initialize the JWT auth helper.
 
         :param user_model: The User model class.
@@ -63,13 +63,17 @@ class JWTAuth:
         """Retrieve validity in seconds of the authentication cookie."""
         return self.auth_cookie_expires
 
-    def create_token(self, user: UserT) -> str:
+    def create_token(self, user: UserViewT) -> str:
         """Get JWT temporary token."""
         expires = self.get_auth_cookie_expires()
+        if not isinstance(user, Document):
+            raise NotImplementedError(
+                "Only beanie.Document User is supported by default. Please override create_token method."
+            )
         jwt_data = {"exp": int(time.time()) + expires, "user_id": str(user.id)}
         return jwt.encode(payload=jwt_data, key=self.crypto_secret, algorithm="HS256")
 
-    async def find_user(self, jwt_token: str) -> Document:
+    async def find_user(self, jwt_token: str) -> UserViewT:
         """
         Verify that JWT token is valid.
 
@@ -82,9 +86,13 @@ class JWTAuth:
             raise jwt.exceptions.InvalidAudienceError("Cannot read user_id.")
 
         # Raises: Object404Error => User cannot be found
+        if not issubclass(self.user_model, Document):
+            raise NotImplementedError(
+                "Only beanie.Document User is supported by default. Please override find_user method."
+            )
         return await self.user_model.get_or_404(jwt_data["user_id"])
 
-    async def login(self, response: Response, request: Request, user: UserT) -> Response:
+    async def login(self, response: Response, request: Request, user: UserViewT) -> Response:
         """Create a persistent cookie based session for the authenticated user."""
         response.set_cookie(
             key=self.get_auth_cookie_key(request),
@@ -98,7 +106,7 @@ class JWTAuth:
         response.delete_cookie(key=self.get_auth_cookie_key(request), httponly=True)
         return response
 
-    async def authenticate(self, request: Request) -> UserT:
+    async def authenticate(self, request: Request) -> UserViewT:
         """Provide the authenticated user to views that require it."""
         try:
             jwt_token = request.cookies[self.get_auth_cookie_key(request)]
@@ -114,7 +122,7 @@ class JWTAuth:
 # class JWTAuthBackend(AuthenticationBackend, JWTAuth):
 #     """Starlette Backend to authenticate use through JWT Token in Cookies."""
 
-#     async def authenticate(self, request: HTTPConnection) -> UserT:
+#     async def authenticate(self, request: HTTPConnection) -> UserViewT:
 #         """Authenticate the user using Cookies."""
 #         cookie_key: str = self.get_auth_cookie_key(request=request)
 #         if cookie_key not in request.cookies:

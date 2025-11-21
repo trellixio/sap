@@ -32,7 +32,7 @@ class TestJWTAuth:
         await user.delete()
 
     @pytest.fixture
-    def jwt_auth(self) -> JWTAuth:
+    def jwt_auth(self) -> JWTAuth[UserDoc]:
         """Create a JWTAuth instance."""
         return JWTAuth(user_model=UserDoc)
 
@@ -42,7 +42,7 @@ class TestJWTAuth:
         return Response(content="test")
 
     @pytest.mark.asyncio
-    async def test_create_token(self, jwt_auth: JWTAuth, user_doc: UserDoc) -> None:
+    async def test_create_token(self, jwt_auth: JWTAuth[UserDoc], user_doc: UserDoc) -> None:
         """Test create_token generates valid JWT token."""
         token = jwt_auth.create_token(user_doc)
 
@@ -58,7 +58,7 @@ class TestJWTAuth:
         assert abs(decoded["exp"] - expected_exp) < 5  # Allow 5 second tolerance
 
     @pytest.mark.asyncio
-    async def test_find_user_success(self, jwt_auth: JWTAuth, user_doc: UserDoc) -> None:
+    async def test_find_user_success(self, jwt_auth: JWTAuth[UserDoc], user_doc: UserDoc) -> None:
         """Test find_user successfully retrieves user with valid token."""
         token = jwt_auth.create_token(user_doc)
         found_user = await jwt_auth.find_user(token)
@@ -68,7 +68,7 @@ class TestJWTAuth:
         assert found_user.email == user_doc.email
 
     @pytest.mark.asyncio
-    async def test_find_user_expired_token(self, jwt_auth: JWTAuth, user_doc: UserDoc) -> None:
+    async def test_find_user_expired_token(self, jwt_auth: JWTAuth[UserDoc], user_doc: UserDoc) -> None:
         """Test find_user raises error with expired token."""
         # Create an expired token
         expired_time = int(time.time()) - 3600  # Expired 1 hour ago
@@ -79,13 +79,13 @@ class TestJWTAuth:
             await jwt_auth.find_user(expired_token)
 
     @pytest.mark.asyncio
-    async def test_find_user_invalid_token(self, jwt_auth: JWTAuth) -> None:
+    async def test_find_user_invalid_token(self, jwt_auth: JWTAuth[UserDoc]) -> None:
         """Test find_user raises error with invalid token."""
         with pytest.raises(jwt.exceptions.InvalidTokenError):
             await jwt_auth.find_user("invalid_token_string")
 
     @pytest.mark.asyncio
-    async def test_find_user_missing_user_id(self, jwt_auth: JWTAuth) -> None:
+    async def test_find_user_missing_user_id(self, jwt_auth: JWTAuth[UserDoc]) -> None:
         """Test find_user raises error when token lacks user_id."""
         # Create token without user_id
         jwt_data = {"exp": int(time.time()) + 3600}
@@ -95,7 +95,7 @@ class TestJWTAuth:
             await jwt_auth.find_user(token)
 
     @pytest.mark.asyncio
-    async def test_find_user_nonexistent_user(self, jwt_auth: JWTAuth) -> None:
+    async def test_find_user_nonexistent_user(self, jwt_auth: JWTAuth[UserDoc]) -> None:
         """Test find_user raises error when user doesn't exist."""
         # Create token with non-existent user_id
         fake_id = PydanticObjectId()
@@ -107,7 +107,7 @@ class TestJWTAuth:
 
     @pytest.mark.asyncio
     async def test_login(
-        self, jwt_auth: JWTAuth, user_doc: UserDoc, request_basic: Request, mock_response: Response
+        self, jwt_auth: JWTAuth[UserDoc], user_doc: UserDoc, request_basic: Request, mock_response: Response
     ) -> None:
         """Test login sets authentication cookie."""
         response = await jwt_auth.login(mock_response, request_basic, user_doc)
@@ -119,7 +119,7 @@ class TestJWTAuth:
         assert "HttpOnly" in cookie_header
 
     @pytest.mark.asyncio
-    async def test_logout(self, jwt_auth: JWTAuth, request_basic: Request, mock_response: Response) -> None:
+    async def test_logout(self, jwt_auth: JWTAuth[UserDoc], request_basic: Request, mock_response: Response) -> None:
         """Test logout deletes authentication cookie."""
         response = await jwt_auth.logout(mock_response, request_basic)
 
@@ -130,7 +130,9 @@ class TestJWTAuth:
         assert "Max-Age=0" in cookie_header or "expires=" in cookie_header.lower()
 
     @pytest.mark.asyncio
-    async def test_authenticate_success(self, jwt_auth: JWTAuth, user_doc: UserDoc, request_basic: Request) -> None:
+    async def test_authenticate_success(
+        self, jwt_auth: JWTAuth[UserDoc], user_doc: UserDoc, request_basic: Request
+    ) -> None:
         """Test authenticate returns user with valid cookie."""
         # Create token and set it in request cookies
         token = jwt_auth.create_token(user_doc)
@@ -142,7 +144,7 @@ class TestJWTAuth:
         assert user.username == user_doc.username
 
     @pytest.mark.asyncio
-    async def test_authenticate_missing_cookie(self, jwt_auth: JWTAuth, request_basic: Request) -> None:
+    async def test_authenticate_missing_cookie(self, jwt_auth: JWTAuth[UserDoc], request_basic: Request) -> None:
         """Test authenticate raises HTTPException when cookie is missing."""
         request_basic._cookies = {}
 
@@ -154,7 +156,7 @@ class TestJWTAuth:
         assert exc_info.value.headers["Location"] == "/pages/auth/login/"
 
     @pytest.mark.asyncio
-    async def test_authenticate_invalid_token(self, jwt_auth: JWTAuth, request_basic: Request) -> None:
+    async def test_authenticate_invalid_token(self, jwt_auth: JWTAuth[UserDoc], request_basic: Request) -> None:
         """Test authenticate raises HTTPException with invalid token."""
         request_basic._cookies = {"user_session": "invalid_token"}
 
@@ -167,7 +169,7 @@ class TestJWTAuth:
 
     @pytest.mark.asyncio
     async def test_authenticate_expired_token(
-        self, jwt_auth: JWTAuth, user_doc: UserDoc, request_basic: Request
+        self, jwt_auth: JWTAuth[UserDoc], user_doc: UserDoc, request_basic: Request
     ) -> None:
         """Test authenticate raises HTTPException with expired token."""
         # Create an expired token
@@ -185,7 +187,7 @@ class TestJWTAuth:
         assert "Location" in exc_info.value.headers
 
     @pytest.mark.asyncio
-    async def test_authenticate_nonexistent_user(self, jwt_auth: JWTAuth, request_basic: Request) -> None:
+    async def test_authenticate_nonexistent_user(self, jwt_auth: JWTAuth[UserDoc], request_basic: Request) -> None:
         """Test authenticate raises HTTPException when user doesn't exist."""
         # Create token with non-existent user_id
         fake_id = PydanticObjectId()
