@@ -8,7 +8,7 @@ all running activities to help debug where the issue might be.
 
 import asyncio
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sap.loggers import logger
@@ -30,7 +30,7 @@ class DebugTask:
     def get_queryset(self, **kwargs: Any) -> str:
         """Return a datetime string for debugging as Queryset."""
         assert self.name
-        return str(datetime.utcnow())
+        return str(datetime.now(UTC))
 
     async def process(self, *args: Any, **kwargs: Any) -> LambdaResponse:
         """Mock a task process for debugging."""
