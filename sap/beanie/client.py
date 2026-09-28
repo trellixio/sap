@@ -24,11 +24,14 @@ from sap.settings import DatabaseParams
 
 @dataclass
 class MongoConnection:
-    """Define a standard cron task response."""
+    """Mongo client bound to the process and event loop that created it."""
 
     client: AsyncMongoClient[typing.Any]
     database: AsyncDatabase[typing.Any]
     pid: int  # Track which process created this connection
+    loop_id: int
+    mongo_params: DatabaseParams
+    document_models: list[typing.Any]
 
 
 class BeanieClient:
@@ -58,23 +61,24 @@ class BeanieClient:
         """
         current_pid = os.getpid()
         connection_name = f"default_{current_pid}"
+        running_loop_id = id(asyncio.get_running_loop())
+        existing = cls.connections.get(connection_name)
+        if existing is not None and existing.loop_id != running_loop_id:
+            # AsyncMongoClient cannot run on a loop other than the one that created it.
+            await cls._discard(connection_name)
+            existing = None
 
-        if connection_name in cls.connections and not force:
+        if existing is not None and not force:
             # Check if we're in a forked process (different PID)
             # Same process, check if connection is still healthy
-            database: AsyncDatabase[typing.Any] = cls.connections[connection_name].database
+            database: AsyncDatabase[typing.Any] = existing.database
 
             try:
                 # Use a timeout for ping to avoid hanging
                 await asyncio.wait_for(database.command("ping"), timeout=2.0)
-            except (pymongo.errors.ConnectionFailure, asyncio.TimeoutError) as exc:
+            except (pymongo.errors.ConnectionFailure, asyncio.TimeoutError, RuntimeError) as exc:
                 logger.debug("--> MongoDB connection %s ping failed: %s, reinitializing", connection_name, str(exc))
-                # Close the old client before creating a new one
-                try:
-                    await cls.connections[connection_name].client.close()
-                except pymongo.errors.PyMongoError:
-                    pass
-                del cls.connections[connection_name]
+                await cls._discard(connection_name)
             else:
                 logger.debug("--> MongoDB connection %s is healthy", connection_name)
                 # await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=False)
@@ -94,6 +98,37 @@ class BeanieClient:
             retryReads=True,  # Retry reads on network errors
         )
         database = client[mongo_params.db]
-        cls.connections[connection_name] = MongoConnection(client=client, database=database, pid=current_pid)
+        cls.connections[connection_name] = MongoConnection(
+            client=client,
+            database=database,
+            pid=current_pid,
+            loop_id=running_loop_id,
+            mongo_params=mongo_params,
+            document_models=list(document_models),
+        )
         await beanie.init_beanie(database, document_models=document_models, allow_index_dropping=False)
         logger.debug("--> Establishing new MongoDB connection (PID: %s)", current_pid)
+
+    @classmethod
+    async def reopen_for_current_loop(cls) -> None:
+        """Recreate the process client when Celery starts a new event loop."""
+        connection_name = f"default_{os.getpid()}"
+        existing = cls.connections.get(connection_name)
+        if existing is None or existing.loop_id == id(asyncio.get_running_loop()):
+            return
+        await cls.init(
+            mongo_params=existing.mongo_params,
+            document_models=existing.document_models,
+            force=True,
+        )
+
+    @classmethod
+    async def _discard(cls, connection_name: str) -> None:
+        """Drop a client that can no longer be used."""
+        connection = cls.connections.pop(connection_name, None)
+        if connection is None:
+            return
+        try:
+            await connection.client.close()
+        except (pymongo.errors.PyMongoError, RuntimeError):
+            pass

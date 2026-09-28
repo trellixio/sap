@@ -13,7 +13,6 @@ from beanie import PydanticObjectId
 from fastapi import Request, Response, status
 from fastapi.exceptions import HTTPException
 
-from AppMain.settings import AppSettings
 from sap.exceptions import Object404Error
 from sap.fastapi.auth import BasicAuth, JWTAuth
 from tests.samples import UserDoc
@@ -47,7 +46,7 @@ class TestJWTAuth:
         token = jwt_auth.create_token(user_doc)
 
         # Decode the token to verify its contents
-        decoded = jwt.decode(token, key=AppSettings.CRYPTO_SECRET, algorithms=["HS256"])
+        decoded = jwt.decode(token, key=jwt_auth.crypto_secret, algorithms=["HS256"])
 
         assert "exp" in decoded
         assert "user_id" in decoded
@@ -73,7 +72,7 @@ class TestJWTAuth:
         # Create an expired token
         expired_time = int(time.time()) - 3600  # Expired 1 hour ago
         jwt_data = {"exp": expired_time, "user_id": str(user_doc.id)}
-        expired_token = jwt.encode(payload=jwt_data, key=AppSettings.CRYPTO_SECRET, algorithm="HS256")
+        expired_token = jwt.encode(payload=jwt_data, key=jwt_auth.crypto_secret, algorithm="HS256")
 
         with pytest.raises(jwt.exceptions.InvalidTokenError):
             await jwt_auth.find_user(expired_token)
@@ -89,7 +88,7 @@ class TestJWTAuth:
         """Test find_user raises error when token lacks user_id."""
         # Create token without user_id
         jwt_data = {"exp": int(time.time()) + 3600}
-        token = jwt.encode(payload=jwt_data, key=AppSettings.CRYPTO_SECRET, algorithm="HS256")
+        token = jwt.encode(payload=jwt_data, key=jwt_auth.crypto_secret, algorithm="HS256")
 
         with pytest.raises(jwt.exceptions.InvalidAudienceError):
             await jwt_auth.find_user(token)
@@ -100,7 +99,7 @@ class TestJWTAuth:
         # Create token with non-existent user_id
         fake_id = PydanticObjectId()
         jwt_data = {"exp": int(time.time()) + 3600, "user_id": str(fake_id)}
-        token = jwt.encode(payload=jwt_data, key=AppSettings.CRYPTO_SECRET, algorithm="HS256")
+        token = jwt.encode(payload=jwt_data, key=jwt_auth.crypto_secret, algorithm="HS256")
 
         with pytest.raises(Object404Error):
             await jwt_auth.find_user(token)
@@ -175,7 +174,7 @@ class TestJWTAuth:
         # Create an expired token
         expired_time = int(time.time()) - 3600
         jwt_data = {"exp": expired_time, "user_id": str(user_doc.id)}
-        expired_token = jwt.encode(payload=jwt_data, key=AppSettings.CRYPTO_SECRET, algorithm="HS256")
+        expired_token = jwt.encode(payload=jwt_data, key=jwt_auth.crypto_secret, algorithm="HS256")
 
         request_basic._cookies = {"user_session": expired_token}
 
@@ -192,7 +191,7 @@ class TestJWTAuth:
         # Create token with non-existent user_id
         fake_id = PydanticObjectId()
         jwt_data = {"exp": int(time.time()) + 3600, "user_id": str(fake_id)}
-        token = jwt.encode(payload=jwt_data, key=AppSettings.CRYPTO_SECRET, algorithm="HS256")
+        token = jwt.encode(payload=jwt_data, key=jwt_auth.crypto_secret, algorithm="HS256")
 
         request_basic._cookies = {"user_session": token}
 

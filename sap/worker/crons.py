@@ -20,6 +20,7 @@ import httpx
 from beanie.odm.queries.find import FindMany
 from fastapi import status as rest_status
 
+from sap.beanie.client import BeanieClient
 from sap.loggers import logger
 from sap.settings import SapSettings
 
@@ -127,7 +128,12 @@ class BaseCronTask(celery.Task):  # type: ignore
     def run(self, *args: Any, **kwargs: Any) -> Any:
         """Run the task."""
         logger.debug("Running task=%s args=%s kwargs=%s", self.get_name(), str(args), str(kwargs))
-        return asyncio.run(self.handle_process(*args, **kwargs))
+        return asyncio.run(self._execute(*args, **kwargs))
+
+    async def _execute(self, *args: Any, **kwargs: Any) -> CronResponse:
+        """Rebind Mongo to this loop, then run the task body."""
+        await BeanieClient.reopen_for_current_loop()
+        return await self.handle_process(*args, **kwargs)
 
 
 class CronStorage:

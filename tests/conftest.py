@@ -16,6 +16,7 @@ from fastapi import Request
 
 from AppMain.asgi import document_models, initialize_beanie
 from AppMain.settings import AppSettings
+from sap.beanie.client import BeanieClient
 from sap.fastapi.cache import CacheParam
 from sap.tests.utils import generate_random_string
 from tests.samples import CategoryDoc, DummyDoc, EmbeddedDummyDoc, MerchantDoc, ProductDoc, UserDoc
@@ -61,6 +62,12 @@ async def initialise_db() -> typing.AsyncGenerator[bool, None]:
     yield True  # suspended until tests are done
 
     print("Disconnecting from MongoDB")
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def mongo_client_on_test_loop() -> None:
+    """Point Beanie at this test's event loop after a Celery task replaced it."""
+    await BeanieClient.reopen_for_current_loop()
 
 
 @pytest.fixture(scope="session")

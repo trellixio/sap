@@ -4,7 +4,8 @@ Test Crons.
 Test xlib.tasks utilities.
 """
 
-from typing import Any, Callable, ClassVar, Optional
+from contextlib import contextmanager
+from typing import Any, Callable, ClassVar, Iterator, Optional
 from unittest import mock
 
 import celery.schedules
@@ -97,17 +98,24 @@ def get_task(is_error: bool) -> CronTask:
     )
 
 
+@contextmanager
+def _as_prod() -> Iterator[None]:
+    """Run the block with the production environment flag set."""
+    SapSettings.is_env_prod = True
+    try:
+        yield
+    finally:
+        SapSettings.is_env_prod = False
+
+
 @pytest.mark.parametrize("is_error", [False, True])
 def test_cron_task_run(is_error: bool) -> None:
+    """Run a registered cron as production would."""
     task = get_task(is_error=is_error)
-    # Force the test to behave like if it were a prod environment
-    SapSettings.is_env_prod = True
-
-    if AppSettings.AIRTABLE_TOKEN:
-        # Testing that airtable sync is working as expected
-        task.run()
-
-    SapSettings.is_env_prod = False
+    with _as_prod():
+        if AppSettings.AIRTABLE_TOKEN:
+            # Testing that airtable sync is working as expected
+            task.run()
 
 
 @pytest.mark.parametrize("is_error", [False, True])
