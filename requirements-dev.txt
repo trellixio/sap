@@ -36,8 +36,8 @@ types-requests~=2.33
 # Testing
 pytest~=9.1
 pytest-asyncio~=1.4
-coverage~=7.11
-pytest-cov~=7.0
+coverage~=7.16
+pytest-cov~=7.1
 async-asgi-testclient~=1.4
 pytest-celery~=0.0  # < upgrade carefully, it requires docker
 pydantic-settings~=2.15

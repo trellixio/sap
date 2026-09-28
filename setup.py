@@ -38,7 +38,7 @@ setup(
         "pydantic~=2.13.5",
         "beanie~=2.2.0",
         "fastapi~=0.141",
-        "redis~=5.1",
+        "redis~=5.3",
         "celery~=5.6",
     ],
     classifiers=[
