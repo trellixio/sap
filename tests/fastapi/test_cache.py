@@ -331,3 +331,62 @@ async def test_cache_view_with_error(client: TestClient) -> None:
         await client.get("/view/error/")
 
     assert counter["calls"] == 2
+
+
+@pytest.mark.asyncio
+async def test_cache_view_empty_body(client: TestClient) -> None:
+    """Skip an empty body when building the cache key."""
+    counter: dict[str, int] = {"calls": 0}
+
+    @app.post("/view/empty-body/")
+    @cache_view(include_body=True)
+    async def test_endpoint_empty_body(request: Request) -> dict[str, int]:
+        """Count calls for an empty body."""
+        counter["calls"] += 1
+        return {"counter": counter["calls"]}
+
+    response = await client.post("/view/empty-body/", data=b"")
+    assert response.status_code == 200
+    assert response.json() == {"counter": 1}
+
+    response = await client.post("/view/empty-body/", data=b"")
+    assert response.status_code == 200
+    assert response.json() == {"counter": 1}
+    assert counter["calls"] == 1
+
+
+@pytest.mark.asyncio
+async def test_cache_view_body_read_error() -> None:
+    """Skip the body when it cannot be read."""
+    counter: dict[str, int] = {"calls": 0}
+
+    @cache_view(include_body=True)
+    async def test_endpoint_body_error(request: Request) -> dict[str, int]:
+        """Count calls when the body cannot be read."""
+        counter["calls"] += 1
+        return {"counter": counter["calls"]}
+
+    request = Request(
+        {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": "POST",
+            "scheme": "http",
+            "path": "/view/body-error/",
+            "raw_path": b"/view/body-error/",
+            "query_string": b"",
+            "headers": [],
+            "client": ("127.0.0.1", 123),
+            "server": ("127.0.0.1", 8000),
+        }
+    )
+
+    async def unreadable_body() -> bytes:
+        """Fail to read the request body."""
+        raise RuntimeError("unreadable")
+
+    request.body = unreadable_body  # type: ignore[method-assign]
+    result = await test_endpoint_body_error(request)
+    assert result == {"counter": 1}
+    assert counter["calls"] == 1

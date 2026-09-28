@@ -1,7 +1,9 @@
 """Tests for BeanieClient class."""
 
 import os
+from unittest import mock
 
+import pymongo.errors
 import pytest
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -83,3 +85,22 @@ async def test_init_reuses_existing_connection(document_models: list[type[Docume
     second_db: AsyncIOMotorDatabase = connection.database
 
     assert first_db == second_db
+
+
+@pytest.mark.asyncio
+async def test_init_recreates_connection_when_ping_fails(document_models: list[type[Document]]) -> None:
+    """Open a new connection when the existing one fails its ping."""
+    BeanieClient.connections.clear()
+    await BeanieClient.init(AppSettings.MONGO, document_models)
+    connection_name = f"default_{os.getpid()}"
+    old_client = BeanieClient.connections[connection_name].client
+    database = BeanieClient.connections[connection_name].database
+
+    async def fail_ping(*args: object, **kwargs: object) -> None:
+        """Fail the connection health check."""
+        raise pymongo.errors.ConnectionFailure("down")
+
+    with mock.patch.object(database, "command", fail_ping):
+        await BeanieClient.init(AppSettings.MONGO, document_models)
+
+    assert BeanieClient.connections[connection_name].client is not old_client

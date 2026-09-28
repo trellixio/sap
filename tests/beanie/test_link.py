@@ -46,3 +46,10 @@ class TestLink:
         # Check redundant fetch returns the same object
         assert await category_fetched.fetch() is category_fetched  # type: ignore
         assert category_fetched.doc is category_fetched
+
+    @pytest.mark.asyncio
+    async def test_fetch_returns_cached_doc(self, product: ProductDoc, category: CategoryDoc) -> None:
+        """Return the cached document without querying again."""
+        link = product.category
+        link.doc = category
+        assert await link.fetch() is category

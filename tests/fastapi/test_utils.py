@@ -96,6 +96,18 @@ def test_unflatten_form_data(data_input: typing.Mapping[str, typing.Any], data_o
             {"key_2": {"key_21": "Xavier"}, "key_4": "Sud"},
             {"key_1": "John", "key_2": {"key_21": "Xavier", "key_22": "Roy"}, "key_3": ["Moi"], "key_4": "Sud"},
         ),
+        (
+            "override",
+            {"key_1": "John"},
+            {"key_1": "John", "key_2": "Doe"},
+            {"key_1": "John", "key_2": "Doe"},
+        ),
+        (
+            "merge",
+            {"key_1": ["John"]},
+            {"key_1": ["Doe"]},
+            {"key_1": ["John", "Doe"]},
+        ),
     ],
 )
 def test_merge_dict_deep(

@@ -5,6 +5,7 @@ Test xlib.tasks utilities.
 """
 
 from typing import Any, Callable, ClassVar, Optional
+from unittest import mock
 
 import celery.schedules
 import pytest
@@ -15,7 +16,7 @@ from beanie.odm.queries.find import FindMany
 
 from AppMain.settings import AppSettings
 from sap.settings import SapSettings
-from sap.worker.crons import CronStat, CronStorage, CronTask, FetchStrategy, register_crontask
+from sap.worker.crons import CronStat, CronStorage, CronTask, FetchStrategy, HealthCheckCron, register_crontask
 from sap.worker.crons_airtable import AirtableStorage
 from tests.samples import DummyDoc
 
@@ -122,3 +123,19 @@ async def test_cron_task_test_process(is_error: bool) -> None:
 
     else:
         await task.test_process(filter_queryset=get_filter_queryset_dummy())
+
+
+@pytest.mark.asyncio
+async def test_health_check_cron() -> None:
+    """Head the heartbeat URL and report an empty queryset."""
+    task = HealthCheckCron()
+    assert not task.get_queryset()
+    assert not await task.get_stats()
+
+    entered = mock.AsyncMock()
+    entered.head.return_value = mock.Mock(status_code=200)
+    client = mock.MagicMock()
+    client.__aenter__ = mock.AsyncMock(return_value=entered)
+    client.__aexit__ = mock.AsyncMock(return_value=None)
+    with mock.patch("sap.worker.crons.httpx.AsyncClient", return_value=client):
+        assert await task.process(heartbeat_url="https://example.com/heartbeat") == {"status": 200}

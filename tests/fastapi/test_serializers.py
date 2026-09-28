@@ -3,17 +3,25 @@
 import json
 from datetime import date, datetime, time
 from decimal import Decimal
+from typing import ClassVar
 
 import pydantic_core
 import pytest
 
 from fastapi import Request
 from pydantic import BaseModel
+from pydantic.fields import FieldInfo
 from starlette.datastructures import URL
 
 from sap.fastapi.pagination import CursorInfo, PaginatedData
-from sap.fastapi.serializers import CustomJSONEncoder
-from tests.samples import DummyDoc, DummyDocSerializer, DummyDocWriteSerializer
+from sap.fastapi.serializers import CustomJSONEncoder, ObjectSerializer, WriteObjectSerializer
+from tests.samples import (
+    DummyDoc,
+    DummyDocSerializer,
+    DummyDocWriteSerializer,
+    EmbeddedDummyDoc,
+    EmbeddedDummyDocWriteSerializer,
+)
 
 
 @pytest.mark.asyncio
@@ -176,3 +184,144 @@ async def test_write_serializer_init() -> None:
     assert updated_doc.info.name == updated_doc_data["info"]["name"] == "Test Info"
 
     await doc.delete()
+
+
+class ContextSource(BaseModel):
+    """Plain object serialized with a context getter."""
+
+    label: str = ""
+
+
+class ContextSerializer(ObjectSerializer[ContextSource]):
+    """Serializer whose getter accepts context."""
+
+    label: str
+
+    @classmethod
+    def get_label(cls, instance: ContextSource, context: dict[str, str]) -> str:  # pylint: disable=unused-argument
+        """Return the label supplied in context."""
+        return context["label"]
+
+
+class NamedSerializer(ObjectSerializer[ContextSource]):
+    """Serializer with an explicit object name."""
+
+    object: ClassVar[str] = "card"
+    title: str = ""
+
+
+class Timestamped:
+    """Plain object that carries created and updated timestamps."""
+
+    created = datetime(2020, 1, 1)
+    updated = datetime(2020, 2, 1)
+
+
+class BareObject:
+    """Plain object without timestamps."""
+
+
+class PublicIdObject:
+    """Plain object identified by a public id."""
+
+    public_id = "pub-1"
+
+
+class NonDocumentWrite(WriteObjectSerializer[EmbeddedDummyDoc]):
+    """Write serializer that cannot persist a Beanie document."""
+
+    name: str
+
+
+NonDocumentWrite.model_fields["instance"] = FieldInfo(annotation=EmbeddedDummyDoc)
+
+
+def test_serializer_context_public_id_and_object_name() -> None:
+    """Read context-aware getters, public ids, and explicit object names."""
+    data = ContextSerializer.read(ContextSource(), context={"label": "from-context"}).model_dump()
+    assert data["label"] == "from-context"
+    assert DummyDocSerializer.get_id(PublicIdObject()) == "pub-1"  # type: ignore[arg-type]
+    assert NamedSerializer.get_object(ContextSource()) == "card"
+
+
+def test_serializer_timestamps_for_plain_objects() -> None:
+    """Read timestamps from a plain object and reject one that has none."""
+    assert DummyDocSerializer.get_created(Timestamped()) == datetime(2020, 1, 1)  # type: ignore[arg-type]
+    assert DummyDocSerializer.get_updated(Timestamped()) == datetime(2020, 2, 1)  # type: ignore[arg-type]
+    with pytest.raises(NotImplementedError):
+        DummyDocSerializer.get_created(BareObject())  # type: ignore[arg-type]
+    with pytest.raises(NotImplementedError):
+        DummyDocSerializer.get_updated(BareObject())  # type: ignore[arg-type]
+
+
+def test_write_serializer_collects_embedded_and_document_fields() -> None:
+    """Collect embedded serializers and document fields once the model is built."""
+
+    class DocWrite(WriteObjectSerializer[DummyDoc]):
+        """Write serializer with embedded and document fields."""
+
+        related: DummyDoc
+        info: EmbeddedDummyDocWriteSerializer
+        tags: list[str] = []
+        name: str
+
+    collect = WriteObjectSerializer.__dict__["__init_subclass__"].__func__
+    collect(DocWrite)
+    assert DocWrite._embedded_serializers["info"] is EmbeddedDummyDocWriteSerializer  # pylint: disable=protected-access
+    assert "related" in DocWrite._document_fields  # pylint: disable=protected-access
+
+
+class InfoWrite(WriteObjectSerializer[DummyDoc]):
+    """Write serializer with an embedded info field."""
+
+    num: int
+    name: str
+    info: EmbeddedDummyDocWriteSerializer
+
+
+InfoWrite._embedded_serializers = {"info": EmbeddedDummyDocWriteSerializer}  # pylint: disable=protected-access
+
+
+def test_write_serializer_model_dump_embedded() -> None:
+    """Dump an embedded field from the instance or from submitted data."""
+    info = EmbeddedDummyDoc(num=1, name="emb", limit=2)
+    stored = DummyDoc(num=1, name="doc", info=info)
+    with_instance = InfoWrite(num=1, name="doc", info={"num": 3, "name": "new", "limit": 4})  # type: ignore[arg-type]
+    with_instance.instance = stored  # pylint: disable=attribute-defined-outside-init
+    dumped = with_instance.model_dump()
+    assert dumped["info"]["name"] == "new"
+    assert dumped["info"]["limit"] == 4
+
+    from_payload = InfoWrite(num=1, name="doc", info={"num": 3, "name": "new", "limit": 4})  # type: ignore[arg-type]
+    from_payload.instance = DummyDoc(num=1, name="doc")  # pylint: disable=attribute-defined-outside-init
+    dumped = from_payload.model_dump()
+    assert dumped["info"] == {"num": 3, "name": "new", "limit": 4}
+
+
+@pytest.mark.asyncio
+async def test_write_serializer_embedded_validators() -> None:
+    """Run async validators on an embedded serializer that has an instance."""
+    info = EmbeddedDummyDoc(num=1, name="emb", limit=2)
+    serializer = InfoWrite(num=1, name="doc", info={"num": 1, "name": "emb", "limit": 2})  # type: ignore[arg-type]
+    serializer.instance = DummyDoc(num=1, name="doc", info=info)  # pylint: disable=attribute-defined-outside-init
+    await serializer.run_async_validators()
+    assert serializer.info.instance == info
+
+
+@pytest.mark.asyncio
+async def test_write_serializer_rejects_non_document() -> None:
+    """Refuse to create or update when the target is not a Beanie document."""
+    serializer = NonDocumentWrite(name="plain")
+    with pytest.raises(NotImplementedError):
+        await serializer.create()
+
+    write = DummyDocWriteSerializer(num=1, name="doc", info={"num": 1, "name": "emb", "limit": 2})  # type: ignore[arg-type]
+    write.instance = EmbeddedDummyDoc(num=1, name="emb", limit=2)  # type: ignore[assignment]
+    with pytest.raises(NotImplementedError):
+        await write.update()
+
+
+def test_custom_json_encoder_fallback() -> None:
+    """Fall through to the default encoder for an unsupported type."""
+    with pytest.raises(TypeError):
+        CustomJSONEncoder().default(object())

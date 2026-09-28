@@ -39,6 +39,16 @@ class TestPrefetchRelated:
         await CategoryDoc.find_all().delete()
 
     @pytest.mark.asyncio
+    async def test_prefetch_related_empty_or_missing_link(self) -> None:
+        """Skip prefetch when there is nothing to fetch or the link is empty."""
+        await prefetch_related([], "category")
+
+        product = await ProductDoc.find_one_or_404()
+        assert product.merchant is None
+        await prefetch_related([product], "merchant")
+        assert product.merchant is None
+
+    @pytest.mark.asyncio
     async def test_query(self) -> None:
         """Test prefetch_related fetches and caches related documents efficiently."""
         # Get fresh products from DB without links fetched
