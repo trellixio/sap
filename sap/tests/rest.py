@@ -16,9 +16,7 @@ from AppMain.asgi import app
 from sap.beanie.document import DocT
 from sap.fastapi.pagination import PaginatedResponse
 from sap.fastapi.user import UserMixin
-
-if typing.TYPE_CHECKING:
-    from pydantic.error_wrappers import ErrorDict
+from sap.fastapi.utils import ErrorDict
 
 
 class Headers(typing.TypedDict, total=False):

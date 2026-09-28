@@ -46,7 +46,10 @@ class CursorInfo:
         self.limit = min(self.limit, self.limit_max)
 
     def get_beanie_query_params(self) -> BeanieQueryParams:
-        """Return params to apply to the database query when using beanie."""
+        """Return params for a beanie page query.
+
+        Count a query without these limit and skip values. Beanie 2 includes both in count().
+        """
         return {
             "limit": self.limit,
             "skip": self.offset,

@@ -1,11 +1,12 @@
 """Tests for BeanieClient class."""
 
 import os
+from typing import Any
 from unittest import mock
 
 import pymongo.errors
 import pytest
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo.asynchronous.database import AsyncDatabase
 
 from AppMain.settings import AppSettings
 from sap.beanie.client import BeanieClient
@@ -31,7 +32,7 @@ async def test_init_creates_connection(document_models: list[type[Document]]) ->
 
     connection_name, connection = next(iter(BeanieClient.connections.items()))
     assert connection_name == f"default_{os.getpid()}"
-    assert isinstance(connection.database, AsyncIOMotorDatabase)
+    assert isinstance(connection.database, AsyncDatabase)
 
 
 @pytest.mark.asyncio
@@ -41,9 +42,9 @@ async def test_get_db_default_returns_database(document_models: list[type[Docume
     BeanieClient.connections.clear()
 
     await BeanieClient.init(AppSettings.MONGO, document_models)
-    db: AsyncIOMotorDatabase = await BeanieClient.get_db_default()
+    db: AsyncDatabase[Any] = await BeanieClient.get_db_default()
 
-    assert isinstance(db, AsyncIOMotorDatabase)
+    assert isinstance(db, AsyncDatabase)
     assert str(db.name) == AppSettings.MONGO.db
 
 
@@ -56,16 +57,16 @@ async def test_init_force_recreates_connection(document_models: list[type[Docume
     # Create initial connection
     await BeanieClient.init(AppSettings.MONGO, document_models)
     _, connection = next(iter(BeanieClient.connections.items()))
-    first_db: AsyncIOMotorDatabase = connection.database
+    first_db: AsyncDatabase[Any] = connection.database
 
     # Force recreate connection
     await BeanieClient.init(AppSettings.MONGO, document_models, force=True)
     _, connection = next(iter(BeanieClient.connections.items()))
-    second_db: AsyncIOMotorDatabase = connection.database
+    second_db: AsyncDatabase[Any] = connection.database
 
     # assert first_db != second_db
-    assert isinstance(first_db, AsyncIOMotorDatabase)
-    assert isinstance(second_db, AsyncIOMotorDatabase)
+    assert isinstance(first_db, AsyncDatabase)
+    assert isinstance(second_db, AsyncDatabase)
 
 
 @pytest.mark.asyncio
@@ -77,12 +78,12 @@ async def test_init_reuses_existing_connection(document_models: list[type[Docume
     # Create initial connection
     await BeanieClient.init(AppSettings.MONGO, document_models)
     _, connection = next(iter(BeanieClient.connections.items()))
-    first_db: AsyncIOMotorDatabase = connection.database
+    first_db: AsyncDatabase[Any] = connection.database
 
     # Try to create new connection without force
     await BeanieClient.init(AppSettings.MONGO, document_models)
     _, connection = next(iter(BeanieClient.connections.items()))
-    second_db: AsyncIOMotorDatabase = connection.database
+    second_db: AsyncDatabase[Any] = connection.database
 
     assert first_db == second_db
 

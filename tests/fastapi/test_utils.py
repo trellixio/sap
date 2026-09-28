@@ -14,9 +14,7 @@ from fastapi.datastructures import FormData
 
 from AppMain.asgi import app
 from sap.fastapi import utils
-
-if typing.TYPE_CHECKING:
-    from pydantic.error_wrappers import ErrorDict
+from sap.fastapi.utils import ErrorDict
 
 
 @pytest.mark.parametrize(
@@ -36,7 +34,7 @@ if typing.TYPE_CHECKING:
         ),
     ],
 )
-def test_pydantic_format_errors(data_input: list["ErrorDict"], data_output: dict[str, dict[str, typing.Any]]) -> None:
+def test_pydantic_format_errors(data_input: list[ErrorDict], data_output: dict[str, dict[str, typing.Any]]) -> None:
     """Test that output matches func(input)."""
     result = utils.pydantic_format_errors(data_input)
     assert result == data_output

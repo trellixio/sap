@@ -1,5 +1,3 @@
-# pylint: disable=too-many-positional-arguments
-
 """
 Documents.
 
@@ -11,7 +9,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Type, TypeVar, Union
 
-from pymongo.client_session import ClientSession
+from pymongo.asynchronous.client_session import AsyncClientSession
 
 import beanie
 import pydantic
@@ -63,7 +61,7 @@ class Document(beanie.Document):
     async def get_or_404(
         cls: Type["DocType"],
         document_id: Union[PydanticObjectId, str],
-        session: Optional[ClientSession] = None,
+        session: AsyncClientSession | None = None,
         ignore_cache: bool = False,
         fetch_links: bool = False,
         with_children: bool = False,
@@ -88,7 +86,7 @@ class Document(beanie.Document):
         cls: Type["DocType"],
         *args: Union[Mapping[str, Any], bool],
         projection_model: Optional[Type["DocumentProjectionType"]] = None,
-        session: Optional[ClientSession] = None,
+        session: AsyncClientSession | None = None,
         ignore_cache: bool = False,
         fetch_links: bool = False,
         with_children: bool = False,

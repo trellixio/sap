@@ -8,16 +8,22 @@ that needs to be re-used but are not a core part of the app logic.
 import base64
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Literal, Mapping, Optional
+from typing import Any, Literal, Mapping, NotRequired, Optional, Sequence, TypedDict
 
 from fastapi import Request
 from fastapi.datastructures import FormData
 
-if TYPE_CHECKING:
-    from pydantic.error_wrappers import ErrorDict
+
+class ErrorDict(TypedDict):
+    """One pydantic validation error."""
+
+    loc: tuple[int | str, ...]
+    msg: str
+    type: str
+    ctx: NotRequired[dict[str, Any]]
 
 
-def pydantic_format_errors(error_list: list["ErrorDict"]) -> dict[str, dict[str, Any]]:
+def pydantic_format_errors(error_list: Sequence[Mapping[str, Any]]) -> dict[str, dict[str, Any]]:
     """Format pydantic ErrorDict with listed loc to dict format.
 
     [{'loc': ('a', 'b'), 'msg': 'message', 'type': 'value_error.str.regex'}]

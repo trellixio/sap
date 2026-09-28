@@ -15,6 +15,7 @@ from decimal import Decimal
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Generic,
     List,
@@ -265,13 +266,16 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
         include: IncEx | None = None,
         exclude: IncEx | None = None,
         context: Any | None = None,
-        by_alias: bool = False,
+        by_alias: bool | None = None,
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
+        exclude_computed_fields: bool = False,
         round_trip: bool = False,
         warnings: bool | Literal["none", "warn", "error"] = True,
+        fallback: Callable[[Any], Any] | None = None,
         serialize_as_any: bool = False,
+        polymorphic_serialization: bool | None = None,
     ) -> dict[str, Any]:
         """Dump the serializer data with exclusion of unwanted fields."""
         # Exclude from dumping
@@ -291,9 +295,12 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
+            exclude_computed_fields=exclude_computed_fields,
             round_trip=round_trip,
             warnings=warnings,
+            fallback=fallback,
             serialize_as_any=serialize_as_any,
+            polymorphic_serialization=polymorphic_serialization,
         )
 
         # for field_name in exclude_doc_dumps:
@@ -320,7 +327,8 @@ class WriteObjectSerializer(BaseModel, Generic[AlchemyOrPydanticModelT]):
 
     async def create(self, **kwargs: Any) -> AlchemyOrPydanticModelT:
         """Create the object in the database using the data extracted by the serializer."""
-        instance_class: type[AlchemyOrPydanticModelT] | None = type(self).model_fields["instance"].annotation
+        fields = dict(type(self).model_fields)
+        instance_class: type[AlchemyOrPydanticModelT] | None = fields["instance"].annotation
         if instance_class and issubclass(instance_class, Document):
             return await instance_class(**self.model_dump()).create()
         raise NotImplementedError
