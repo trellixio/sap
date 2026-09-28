@@ -60,7 +60,7 @@ def fixture_setup_celery_app(celery_app: celery.Celery) -> bool:
 
 
 @pytest.mark.asyncio
-async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worker.WorkController) -> None:  # type: ignore
+async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worker.WorkController) -> None:
     """Create dummy lambda worker to ensure that LambdaWorker class is functioning."""
     assert setup_celery_app and celery_worker
 

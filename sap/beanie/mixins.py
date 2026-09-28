@@ -1,8 +1,20 @@
 """Mixin for User models."""
 
+import bcrypt
 import passlib.context
 
 import pydantic
+
+_bcrypt_hashpw = bcrypt.hashpw
+
+
+def _hashpw(password: bytes, salt: bytes) -> bytes:
+    """Hash a password, keeping bcrypt's historical 72-byte truncation."""
+    # bcrypt 5 raises above 72 bytes. passlib 1.7 still probes that limit.
+    return _bcrypt_hashpw(password[:72], salt)
+
+
+bcrypt.hashpw = _hashpw
 
 crypt_context = passlib.context.CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -20,7 +32,7 @@ class PasswordMixin(pydantic.BaseModel):
         Hash a new password and save to the database.
 
         Args:
-            password: The password to hash truncated to 70 characters.
+            password: The password to hash. bcrypt uses the first 72 bytes.
         """
         self.hashed_password = crypt_context.hash(password)
 

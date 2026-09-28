@@ -9,12 +9,13 @@ depending of use case. The different use cases are:
 - RPCCeleryConfig: Tasks that run on a remote server synchronously, need to wait for a result.
 - CronCeleryConfig: Periodic tasks that are scheduled.
 """
+
 import typing
 
 # do not remove, forcing update of format for better amqp exchanges structures
 from kombu.pidbox import Mailbox
 
-Mailbox.reply_exchange_fmt = "%s.reply.pidbox"  # type: ignore
+Mailbox.reply_exchange_fmt = "%s.reply.pidbox"
 
 
 class CeleryConfig:

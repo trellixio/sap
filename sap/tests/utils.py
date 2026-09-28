@@ -5,6 +5,7 @@ Utils.
 
 Re-usable methods and functions for all test cases.
 """
+
 from __future__ import annotations
 
 import random

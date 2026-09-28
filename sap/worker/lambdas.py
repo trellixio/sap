@@ -84,13 +84,13 @@ class LambdaWorker(celery.bootsteps.ConsumerStep):
             params = packet.queue_get_params(task_name=self.name, is_fallback=True)
             params["exchange"] = kombu.Exchange(name=params["exchange"], type="topic", channel=channel, durable=True)
             queue_fallback = kombu.Queue(**params, channel=channel)
-            queue_fallback.declare()  # type: ignore
+            queue_fallback.declare()
 
             # declare primary queue
             params = packet.queue_get_params(task_name=self.name, is_fallback=False)
             params["exchange"] = kombu.Exchange(name=params["exchange"], type="topic", channel=channel, durable=True)
             queue_primary = kombu.Queue(**params, channel=channel)
-            queue_primary.declare()  # type: ignore
+            queue_primary.declare()
 
             # only listen to primary queue
             queue_list.append(queue_primary)

@@ -12,7 +12,7 @@ import celery
 import celery.schedules
 from celery.events.state import State
 from celery.utils.serialization import strtobool
-from celery.worker.control import Panel
+from celery.worker.control import inspect_command
 
 from .crons import CronTask
 
@@ -87,8 +87,7 @@ def register_tasks_with_celery_beat(
     return beat_schedule
 
 
-@Panel.register(  # type: ignore[misc]
-    type="inspect",
+@inspect_command(
     alias="dump_conf",
     signature="[include_defaults=False]",
     args=[("with_defaults", strtobool)],

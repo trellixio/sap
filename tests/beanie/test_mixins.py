@@ -76,7 +76,7 @@ class TestPasswordMixin:
     @pytest.mark.asyncio
     async def test_long_password(self, user: UserDoc) -> None:
         """Test very long password."""
-        long_password = "a" * 73  # 72 characters is the maximum length supported by bcrypt
+        long_password = "a" * 73  # bcrypt uses the first 72 bytes
         user.set_password(long_password)
         assert user.verify_password(long_password) is True
         assert user.verify_password("a" * 999) is True

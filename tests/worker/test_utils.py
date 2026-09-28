@@ -6,7 +6,7 @@ Test celery beat registration and inspect commands.
 
 import celery
 import celery.schedules
-from celery.events.state import State  # type: ignore[import-untyped]
+from celery.events.state import State
 
 from sap.worker.crons import HealthCheckCron
 from sap.worker.utils import conf, register_tasks_with_celery_beat

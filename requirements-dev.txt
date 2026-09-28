@@ -16,33 +16,33 @@
 -r requirements.txt
 
 # Formatting
-black~=25.9
-isort~=7.0
-rich~=14.2
+black~=26.5
+isort~=9.0
+rich~=15.0
 
 # Linting
 pylint~=4.0
-mypy~=1.18
+mypy~=2.3
 pydocstyle~=6.3
 
 # Linting: Stubs
 types-PyYAML~=6.0
-celery-types~=0.23
+celery-types~=0.26
 motor-stubs~=1.7
-types-setuptools~=80.9
+types-setuptools~=84.0
 types-passlib~=1.7
-types-requests~=2.32
+types-requests~=2.33
 
 # Testing
-pytest~=8.4
-pytest-asyncio~=1.2.0
+pytest~=9.1
+pytest-asyncio~=1.4
 coverage~=7.11
 pytest-cov~=7.0
 async-asgi-testclient~=1.4
 pytest-celery~=0.0  # < upgrade carefully, it requires docker
-pydantic-settings~=2.11
-bcrypt~=4.3
+pydantic-settings~=2.15
+bcrypt~=5.0
 
 # CI/CD
-pre-commit~=4.3
+pre-commit~=4.6
 PyYAML~=6.0
