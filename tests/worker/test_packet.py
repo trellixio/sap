@@ -102,3 +102,4 @@ async def test_signal_packet_send() -> None:
     # Test that packet are disable by default in dev
     SapSettings.is_env_dev = True
     await packet_sender.send(identifier=identifier, timestamp=timestamp)
+    await packet_sender.connection_close()
