@@ -40,7 +40,7 @@ class JWTAuth(Generic[UserViewT]):
     auth_login_url: ClassVar[str] = "/pages/auth/login/"
     auth_cookie_key: ClassVar[str] = "user_session"
     auth_cookie_expires: ClassVar[int] = 60 * 60 * 12  # expiration = 12 hours
-    crypto_secret: ClassVar[str] = "xxx-xxxxxxxxx-xxxxxx"
+    crypto_secret: ClassVar[str] = "xxx-xxxxxxxxx-xxxxxx-xxxxxxxxxxxx"
     user_model: type[UserViewT]
 
     def __init__(self, user_model: type[UserViewT]) -> None:

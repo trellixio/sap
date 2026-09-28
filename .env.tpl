@@ -4,7 +4,7 @@
 # Basic
 APP_ENV="DEV"
 APP_SETTINGS_LOG_DIR="/tmp/"
-APP_SETTINGS_CRYPTO_SECRET="xxx-xxxxxxxxx-xxxxxx"
+APP_SETTINGS_CRYPTO_SECRET="xxx-xxxxxxxxx-xxxxxx-xxxxxxxxxxxx"
 
 # MongoDB
 APP_SETTINGS_MONGO__HOST="localhost"
