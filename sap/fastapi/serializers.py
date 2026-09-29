@@ -32,7 +32,7 @@ import pydantic_core
 from typing_extensions import Literal
 
 from fastapi import Request
-from pydantic import BaseModel
+from pydantic import AnyUrl, BaseModel
 from pydantic.fields import FieldInfo, PrivateAttr
 
 from sap.beanie.document import Document
@@ -368,7 +368,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             return o.isoformat()
         if isinstance(o, time):
             return o.strftime("%H:%M:%S")
-        if isinstance(o, pydantic_core.Url):
+        if isinstance(o, (pydantic_core.Url, AnyUrl)):
             return str(o)
         if isinstance(o, BaseModel):
             return o.model_dump()

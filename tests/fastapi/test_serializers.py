@@ -9,7 +9,7 @@ import pydantic_core
 import pytest
 
 from fastapi import Request
-from pydantic import BaseModel
+from pydantic import AnyUrl, BaseModel, HttpUrl
 from pydantic.fields import FieldInfo
 from starlette.datastructures import URL
 
@@ -122,11 +122,13 @@ def test_custom_json_encoder_time() -> None:
 
 
 def test_custom_json_encoder_url() -> None:
-    """Test CustomJSONEncoder handles pydantic_core.Url objects."""
+    """Test CustomJSONEncoder handles pydantic URL objects."""
     encoder = CustomJSONEncoder()
-    url = pydantic_core.Url("https://example.com/path")
-    result = encoder.default(url)
-    assert result == "https://example.com/path"
+    core_url = pydantic_core.Url("https://example.com/path")
+    http_url = HttpUrl("https://example.com/path")
+    assert encoder.default(core_url) == "https://example.com/path"
+    assert encoder.default(http_url) == "https://example.com/path"
+    assert isinstance(http_url, AnyUrl)
 
 
 def test_custom_json_encoder_base_model() -> None:
