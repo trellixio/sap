@@ -1,7 +1,8 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-yellow.svg)](https://www.python.org/downloads/release/python-312/)
 
 # SAP
-Library of re-usable utilities for python web apps .
+Library of re-usable utilities for python web apps.
+Published as `sapx`; import it as `sap`.
 
 ## 🔨 Installing
 
@@ -10,9 +11,17 @@ Before getting started, ensure that [Python 3.12](https://www.python.org/) is in
 
 ### MongoDB
 MongoDB is a document-oriented database that use JSON-like documents to store data.
-You will need to install MongoDB 6.0 [locally](https://www.mongodb.com/docs/manual/installation/)
+You will need to install MongoDB 8.0 [locally](https://www.mongodb.com/docs/manual/installation/)
 or sign up for a free hosted one with [MongoDB Atlas](https://www.mongodb.com/pricing).
 Once you install MongoDB, make sure to create a database.
+
+### Redis
+Redis is used for cache and as the Celery result backend.
+You will need to install Redis 8 [locally](https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/).
+
+### RabbitMQ
+RabbitMQ is the message broker used by Celery workers.
+You will need to install RabbitMQ 4.1 [locally](https://www.rabbitmq.com/docs/download).
 
 ### Steps
 Clone the repo and open a terminal at the root of the cloned repo.
@@ -37,18 +46,13 @@ pip install -r requirements-dev.txt
 pre-commit install
 ```
 
-Allow pre-commit custom hooks execution
-```shell
-git update-index --chmod=+x scripts/*
-```
-
 5. Init environment variables. Duplicate the env template file:
 ```shell
 cp ./.env.tpl ./.env
 ```
 Open `.env` file with a text editor and update the env vars as needed.
-Note that some env vars need to be update manually, so make sure
-to follow the instructions in the `.env` file.
+Set `APP_SETTINGS_CRYPTO_SECRET`. MongoDB, Redis, and RabbitMQ hosts
+must match the services above. `APP_SETTINGS_TOKENIFY__APP_DOMAIN` is required.
 
 
 ## 🖌 Formatting
@@ -92,7 +96,7 @@ From the project root, run:
 mypy .
 ```
 
-- Use mypy to check for documentation issues.
+- Use pydocstyle to check for documentation issues.
 From the project root, run:
 ```shell
 pydocstyle .
@@ -101,12 +105,8 @@ pydocstyle .
 
 ## 🧪 Testing
 
-Tests are run using the pytest library..
+Tests are run using the pytest library.
 From the project root, run:
 ```shell
 pytest
 ```
-
-# Todo
-
-- Test auto release
