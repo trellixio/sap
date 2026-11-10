@@ -18,8 +18,8 @@ def test_reply_exchange_format() -> None:
 @pytest.mark.parametrize(
     "case",
     [
-        (LambdaCeleryConfig, True, True, False, True, False),
-        (LambdaCeleryConfig, False, True, False, True, False),
+        (LambdaCeleryConfig, True, True, True, True, False),
+        (LambdaCeleryConfig, False, True, True, True, False),
         (CronCeleryConfig, True, False, True, False, True),
         (CronCeleryConfig, False, False, True, False, True),
     ],

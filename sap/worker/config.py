@@ -76,7 +76,9 @@ class LambdaCeleryConfig(CeleryConfig):
 
         self.task_create_missing_queues = False
         self.task_acks_late = True
-        self.task_acks_on_failure_or_timeout = False
+        # Acknowledge failed and timed-out tasks: otherwise Celery requeues a timed-out task forever.
+        # Retries are explicit and bounded instead, see `LambdaTask.autoretry_for`.
+        self.task_acks_on_failure_or_timeout = True
         self.task_reject_on_worker_lost = True
 
 

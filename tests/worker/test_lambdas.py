@@ -40,6 +40,40 @@ def test_lambda_task() -> None:
     assert "result" in result
 
 
+class FailingLambdaTask(LambdaTask):
+    """Lambda task that always fails with a transient error."""
+
+    packet = SignalPacket("sap_tests.app.*.user.failed", providing_args=["identifier"])
+    attempts: list[str] = []
+
+    async def handle_process(self, *args: str, **kwargs: typing.Any) -> LambdaResponse:
+        """Record the attempt and fail."""
+        self.attempts.append(args[0])
+        raise ConnectionError("service unreachable")
+
+
+class FlakyLambdaTask(FailingLambdaTask):
+    """Lambda task that opts in to retries for transient errors."""
+
+    autoretry_for = (ConnectionError,)
+    max_retries = 2
+
+
+@pytest.mark.parametrize("task_class, attempts_expected", [(FailingLambdaTask, 1), (FlakyLambdaTask, 3)])
+def test_lambda_task_retries_are_opt_in_and_bounded(
+    task_class: type[FailingLambdaTask], attempts_expected: int
+) -> None:
+    """Fail once without `autoretry_for`; otherwise retry `max_retries` times, then fail."""
+    task_class.attempts = []
+    task = celery.Celery("retries").register_task(register_lambda(task_class))
+
+    result = task.apply(args=("card_12345",))
+
+    assert result.failed()
+    assert isinstance(result.result, ConnectionError)
+    assert len(task_class.attempts) == attempts_expected
+
+
 class DummyLambdaWorker(LambdaWorker):
     """Create a dummy Lambda worker for testing."""
 

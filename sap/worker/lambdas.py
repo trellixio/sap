@@ -43,6 +43,12 @@ class LambdaTask(celery.Task):  # type: ignore
     time_limit: int = 60 * 1  # 1 minutes
     packet: SignalPacket
 
+    # Retries are opt-in: list the exceptions worth retrying (e.g. transient network errors).
+    # Celery retries them up to `max_retries` times with exponential backoff; any other failure is final.
+    autoretry_for: tuple[type[Exception], ...] = ()
+    max_retries: int | None = 3
+    retry_backoff: bool = True
+
     def __init__(self, **kwargs: Any) -> None:
         """Initialize lambda arguments."""
         self.name = self.get_name()
