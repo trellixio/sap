@@ -21,7 +21,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       max-parallel: 1
       matrix:
@@ -63,6 +63,10 @@ jobs:
           mongodb-version: ${{ matrix.mongodb-version }}
           mongodb-port: 27017
           # mongodb-db: trellis_test
+
+      - name: Show MongoDB logs
+        if: failure() && steps.mongo_server.outcome == 'failure'
+        run: docker logs mongodb
 
       - name: Start RabbitMQ
         id: rabbitmq_server
