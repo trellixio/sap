@@ -65,8 +65,13 @@ async def initialise_db() -> typing.AsyncGenerator[bool, None]:
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def mongo_client_on_test_loop() -> None:
-    """Point Beanie at this test's event loop after a Celery task replaced it."""
+async def mongo_client_on_test_loop() -> typing.AsyncGenerator[None, None]:
+    """Point Beanie at this test's event loop after a Celery task replaced it.
+
+    Rebind again after the test, so session teardown works when the last test ran a task in `asyncio.run`.
+    """
+    await BeanieClient.reopen_for_current_loop()
+    yield
     await BeanieClient.reopen_for_current_loop()
 
 
