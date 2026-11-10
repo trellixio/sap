@@ -10,6 +10,7 @@ import typing
 
 import aioamqp
 import aioamqp.channel
+import aioamqp.exceptions
 from pamqp.constants import DOMAIN_REGEX
 
 from sap.loggers import logger
@@ -53,27 +54,32 @@ class _Packet:
 
     @classmethod
     async def connection_retrieve(cls) -> AMQPClient:
-        """Initialize connection to AMQP and save in cache for future use."""
-        if "default" not in cls.connections:
+        """
+        Initialize connection to AMQP and save in cache for future use.
+
+        A cached connection that was closed, or opened by another event loop, is replaced by a new one.
+        """
+        client = cls.connections.get("default")
+        if client is not None and not client.is_usable():
+            await cls.connection_close()
+            client = None
+        if client is None:
             client = AMQPClient()
             await client.connect()
             cls.connections["default"] = client
-        return cls.connections["default"]
+        return client
 
     @classmethod
     async def connection_close(cls) -> None:
-        channel = await cls.get_default_channel()
-        if channel.is_open:
-            await channel.close()
-        cls.connections.pop("default")
+        """Close the cached connection, if any."""
+        client = cls.connections.pop("default", None)
+        if client is not None:
+            await client.close()
 
     @classmethod
     async def get_default_channel(cls) -> aioamqp.channel.Channel:
         """Return the default channel for the opened connection."""
         connection: AMQPClient = await cls.connection_retrieve()
-        # if not connection.channel.is_open:
-        #     cls.connections.pop('default')
-        #     connection = await cls.connection_retrieve()
         return connection.channel
 
     def exchange_get_name(self, is_fallback: bool = False) -> str:
@@ -128,19 +134,28 @@ class SignalPacket(_Packet):
             "*" not in self.topic and "#" not in self.topic
         ), "Cannot use special matching character in topic to send packet"
 
+        payload = json.dumps({"identifier": identifier, "kwargs": kwargs}).encode("utf-8")
+
+        try:
+            await self._publish(payload)
+        except aioamqp.exceptions.AioamqpException as exc:
+            # The connection was lost after it was checked: publish once more on a new connection.
+            logger.warning("Lambda Packet publish failed, reconnecting: topic=%s error=%r", self.topic, exc)
+            await self.connection_close()
+            await self._publish(payload)
+
+    async def _publish(self, payload: bytes) -> None:
+        """Declare the exchange and publish the payload to it."""
         await self.exchange_declare()
 
         channel = await self.get_default_channel()
 
-        payload = json.dumps({"identifier": identifier, "kwargs": kwargs})
-
         await channel.basic_publish(
-            payload=payload.encode("utf-8"),
+            payload=payload,
             exchange_name=self.exchange_get_name(),
             routing_key=self.topic,
             properties={"content_type": "application/json"},
         )
-        # await self.connection_close()
 
     def queue_get_name(self, task_name: str, is_fallback: bool = False) -> str:
         """

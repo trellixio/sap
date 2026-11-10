@@ -109,6 +109,7 @@ module = [
     "aioamqp.exceptions",
     "aioamqp.properties",
     "aioamqp.envelope",
+    "aioamqp.protocol",
 ]
 ignore_missing_imports = true
 implicit_reexport = true

@@ -1,6 +1,8 @@
 import asyncio
 import json
 import time
+import typing
+from unittest import mock
 
 # TODO: Replace aioamqp (deprecated) with aio-pika
 import aioamqp.channel
@@ -8,6 +10,7 @@ import aioamqp.envelope
 import aioamqp.exceptions
 import aioamqp.properties
 import pytest
+import pytest_asyncio
 
 from AppMain.settings import AppSettings
 from sap.settings import SapSettings
@@ -103,3 +106,76 @@ async def test_signal_packet_send() -> None:
     SapSettings.is_env_dev = True
     await packet_sender.send(identifier=identifier, timestamp=timestamp)
     await packet_sender.connection_close()
+
+
+@pytest.fixture(name="packet_sending")
+def fixture_packet_sending() -> typing.Iterator[None]:
+    """Enable packet sending, which is disabled in dev."""
+    SapSettings.is_env_dev = False
+    yield
+    SapSettings.is_env_dev = True
+
+
+@pytest_asyncio.fixture(name="packet_connection_closed")
+async def fixture_packet_connection_closed() -> typing.AsyncIterator[None]:
+    """Close the connection opened by the test, even when it fails."""
+    yield
+    await SignalPacket.connection_close()
+
+
+@pytest.fixture(name="connection_session_aside")
+def fixture_connection_session_aside() -> typing.Iterator[None]:
+    """Keep the pytest loop's connection aside while the test opens connections on its own event loops."""
+    connection_session = SignalPacket.connections.pop("default", None)
+    yield
+    if connection_session is not None:
+        SignalPacket.connections["default"] = connection_session
+
+
+@pytest.mark.usefixtures("packet_sending", "connection_session_aside")
+def test_signal_packet_send_from_successive_event_loops() -> None:
+    """Reconnect when the cached connection was opened by an event loop that has since closed.
+
+    Celery tasks run each call in its own `asyncio.run`, so a task that sends a packet hits this on its second run.
+    """
+    packet = SignalPacket("sap_tests.app.card_12345.loop.created", providing_args=["identifier"])
+
+    async def send_then_close() -> None:
+        await packet.send("card_12345")
+        await packet.connection_close()
+
+    asyncio.run(asyncio.wait_for(packet.send("card_12345"), timeout=10))
+    asyncio.run(asyncio.wait_for(send_then_close(), timeout=10))  # used to wait forever on the stale connection
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("packet_sending", "packet_connection_closed")
+async def test_signal_packet_send_after_connection_lost() -> None:
+    """Open a new connection when the broker dropped the cached one."""
+    packet = SignalPacket("sap_tests.app.card_12345.lost.created", providing_args=["identifier"])
+    connection_lost = await packet.connection_retrieve()
+    connection_lost.transport.abort()  # drop the socket like a broker restart would
+    await asyncio.sleep(0.1)
+
+    await asyncio.wait_for(packet.send("card_12345"), timeout=10)
+
+    assert packet.connections["default"] is not connection_lost
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("packet_sending", "packet_connection_closed")
+async def test_signal_packet_send_reconnects_once_when_publish_fails() -> None:
+    """Retry a publish once on a new connection; a second failure is raised."""
+    packet = SignalPacket("sap_tests.app.card_12345.retry.created", providing_args=["identifier"])
+    closed = aioamqp.exceptions.AmqpClosedConnection()
+    await packet.exchange_declare()  # the declarations below are mocked, make sure the exchange exists
+    connection_first = await packet.connection_retrieve()
+
+    with mock.patch.object(SignalPacket, "exchange_declare", side_effect=[closed, None]) as exchange_declare:
+        await packet.send("card_12345")
+    assert exchange_declare.await_count == 2
+    assert packet.connections["default"] is not connection_first
+
+    with mock.patch.object(SignalPacket, "exchange_declare", side_effect=[closed, closed]):
+        with pytest.raises(aioamqp.exceptions.AmqpClosedConnection):
+            await packet.send("card_12345")
