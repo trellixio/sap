@@ -8,11 +8,8 @@ Published as `sapx`; import it as `sap`.
 Install the extras the app needs:
 - `sqlalchemy`: SQL databases with SQLAlchemy, for the models of `sap.fastapi` serializers and forms;
 - `beanie`: MongoDB with Beanie, for `sap.beanie` and its FastAPI middleware in `sap.beanie.fastapi`;
-- `amqp`: RabbitMQ, to send packets with `sap.worker.packet`;
 - `taskiq`: background workers on Taskiq, for `sap.worker.taskiq`;
 - `celery`: background workers on Celery, for `sap.worker.celery`.
-
-Both worker extras include `amqp`.
 
 ```shell
 pip install "sapx[beanie,taskiq]"

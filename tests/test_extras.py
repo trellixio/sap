@@ -51,7 +51,6 @@ def test_fastapi_works_without_beanie() -> None:
     [
         ("sap.beanie", "beanie", "beanie"),
         ("sap.beanie.tests", "beanie", "beanie"),
-        ("sap.worker.packet", "aio_pika", "amqp"),
         ("sap.worker.taskiq", "taskiq", "taskiq"),
         ("sap.worker.celery", "celery", "celery"),
     ],

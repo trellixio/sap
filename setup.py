@@ -11,15 +11,14 @@ LONG_DESCRIPTION = "Library of re-usable utilities for python web apps."
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-VERSION = "0.6.0"
+VERSION = "0.6.1"
 
 # Install the extras an app needs: its database, `sqlalchemy` or `beanie` for MongoDB,
 # and the worker runner it uses, `taskiq` or `celery`.
 EXTRAS_SQLALCHEMY = ["SQLAlchemy~=2.1"]
 EXTRAS_BEANIE = ["pymongo~=4.18", "beanie~=2.2.0"]
-EXTRAS_AMQP = ["aio-pika~=10.2"]  # send packets with `sap.worker.packet`
-EXTRAS_CELERY = ["celery~=5.6", *EXTRAS_AMQP]
-EXTRAS_TASKIQ = ["taskiq~=0.13.0", "taskiq-aio-pika~=0.6.1", *EXTRAS_AMQP]
+EXTRAS_CELERY = ["celery~=5.6"]
+EXTRAS_TASKIQ = ["taskiq~=0.13.0", "taskiq-aio-pika~=0.6.1"]
 
 setup(
     name="sapx",
@@ -44,9 +43,9 @@ setup(
         "pydantic~=2.13.5",
         "fastapi~=0.141",
         "redis~=6.4",
+        "aio-pika~=10.2",
     ],
     extras_require={
-        "amqp": EXTRAS_AMQP,
         "beanie": EXTRAS_BEANIE,
         "celery": EXTRAS_CELERY,
         "sqlalchemy": EXTRAS_SQLALCHEMY,

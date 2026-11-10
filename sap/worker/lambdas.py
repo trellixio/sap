@@ -5,10 +5,9 @@ They run code in response to events which are typically messages sent to a queue
 This module defines what a lambda handles; `sap.worker.celery` and `sap.worker.taskiq` run it.
 """
 
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
-if TYPE_CHECKING:
-    from sap.worker.packet import SignalPacket
+from .packet import SignalPacket
 
 
 class LambdaResponse(TypedDict, total=False):
@@ -26,7 +25,7 @@ class LambdaHandler:
     It handles the packets sent to the topics that match the topic pattern of its packet.
     """
 
-    packet: "SignalPacket"
+    packet: SignalPacket
     time_limit: Optional[int] = 60 * 1  # 1 minutes, None disables the limit
 
     # Retries are opt-in: list the exceptions worth retrying (e.g. transient network errors).

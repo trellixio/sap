@@ -4,8 +4,6 @@ Packet.
 Packets are messages sent through RabbitMQ to run lambdas on remote servers, whatever runs them.
 A signal packet goes to the `packet.signal` topic exchange, as a JSON body `{"identifier": ..., "kwargs": {...}}`
 routed by a topic such as `stem.card_1.credit.created`: every service whose queue subscribes to the topic gets it.
-
-It needs the `amqp` extra, which the `taskiq` and `celery` extras include.
 """
 
 import asyncio
@@ -14,11 +12,7 @@ import re
 import uuid
 from typing import Any, ClassVar, Optional
 
-try:
-    import aio_pika
-except ImportError as exc:
-    raise ImportError("sap.worker.packet needs the amqp extra: pip install 'sapx[amqp]'") from exc
-
+import aio_pika
 import aio_pika.abc
 import aio_pika.exceptions
 from pamqp.constants import DOMAIN_REGEX
