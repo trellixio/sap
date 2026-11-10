@@ -25,10 +25,10 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.12]
-        redis-version: [8]
-        mongodb-version: [8.0]
-        rabbitmq-version: [4.1]
+        python-version: ['3.12']
+        redis-version: ['8']
+        mongodb-version: ['8.0']
+        rabbitmq-version: ['4.1']
     outputs:
       test_results: ${{ join(steps.run_tests.outputs.*, '\n') }}
 
@@ -58,7 +58,7 @@ jobs:
 
       - name: Start MongoDB
         id: mongo_server
-        uses: supercharge/mongodb-github-action@1.10.0
+        uses: supercharge/mongodb-github-action@1.12.1
         with:
           mongodb-version: ${{ matrix.mongodb-version }}
           mongodb-port: 27017
