@@ -9,12 +9,9 @@ import pytest
 
 from AppMain.settings import AppSettings
 from sap.beanie.client import BeanieClient
-from sap.settings import SapSettings
-from sap.worker import AMQPClient, LambdaTask, LambdaWorker, SignalPacket, register_lambda
-from sap.worker.lambdas import HealthCheckLambda, LambdaResponse
+from sap.worker.celery import LambdaTask, LambdaWorker, SignalPacket, register_lambda
+from sap.worker.celery.lambdas import HealthCheckLambda, LambdaResponse
 from tests.samples import DummyDoc
-
-AMQPClient.db_params = AppSettings.RABBITMQ
 
 
 class DummyLambdaTask(LambdaTask):
@@ -94,14 +91,13 @@ def fixture_setup_celery_app(celery_app: celery.Celery) -> bool:
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("packet_sending", "publisher")
 async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worker.WorkController) -> None:
-    """Create dummy lambda worker to ensure that LambdaWorker class is functioning."""
+    """Run the lambdas of the packets that the Celery worker consumes."""
     assert setup_celery_app and celery_worker
 
     identifier = "card_12345"
     timestamp = int(time.time())
-
-    SapSettings.is_env_dev = False
 
     # Send packet
     packet_yes = SignalPacket(f"sap_tests.app.{identifier}.user.created", providing_args=["identifier", "timestamp"])
@@ -112,17 +108,12 @@ async def test_lambda_worker(setup_celery_app: bool, celery_worker: celery.worke
     await packet_yes.send(identifier, timestamp=timestamp + 3)
     await packet_no.send(identifier, timestamp=timestamp + 4)
 
-    await packet_yes.connection_close()
-    await packet_no.connection_close()
-
     await asyncio.sleep(3)
 
     assert timestamp + 1 in DummyLambdaTask.results
     assert timestamp + 2 not in DummyLambdaTask.results
     assert timestamp + 3 in DummyLambdaTask.results
     assert timestamp + 4 not in DummyLambdaTask.results
-
-    SapSettings.is_env_dev = True
 
 
 class RecordingLambda(LambdaTask):
@@ -213,9 +204,9 @@ def test_lambda_worker_runs_sync_tasks() -> None:
 async def test_health_check_lambda_heartbeat() -> None:
     """Head the heartbeat URL and reject any status other than 200."""
     task = HealthCheckLambda()
-    with mock.patch("sap.worker.lambdas.httpx.AsyncClient", return_value=http_client(200)):
+    with mock.patch("sap.worker.celery.lambdas.httpx.AsyncClient", return_value=http_client(200)):
         await task.heartbeat("https://example.com/heartbeat")
 
-    with mock.patch("sap.worker.lambdas.httpx.AsyncClient", return_value=http_client(500)):
+    with mock.patch("sap.worker.celery.lambdas.httpx.AsyncClient", return_value=http_client(500)):
         with pytest.raises(AssertionError):
             await task.heartbeat("https://example.com/heartbeat")

@@ -4,6 +4,19 @@
 Library of re-usable utilities for python web apps.
 Published as `sapx`; import it as `sap`.
 
+## 📦 Using in an app
+Install the extras the app needs:
+- `beanie`: MongoDB with Beanie, for `sap.beanie` and `sap.fastapi`;
+- `amqp`: RabbitMQ, to send packets with `sap.worker.packet`;
+- `taskiq`: background workers on Taskiq, for `sap.worker.taskiq`;
+- `celery`: background workers on Celery, for `sap.worker.celery`.
+
+Both worker extras include `amqp`.
+
+```shell
+pip install "sapx[beanie,taskiq]"
+```
+
 ## 🔨 Installing
 
 ### Python 3.12
@@ -16,11 +29,11 @@ or sign up for a free hosted one with [MongoDB Atlas](https://www.mongodb.com/pr
 Once you install MongoDB, make sure to create a database.
 
 ### Redis
-Redis is used for cache and as the Celery result backend.
+Redis is used for cache, cron locks and as the Celery result backend.
 You will need to install Redis 8 [locally](https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/).
 
 ### RabbitMQ
-RabbitMQ is the message broker used by Celery workers.
+RabbitMQ is the message broker used by the workers, on Taskiq or Celery.
 You will need to install RabbitMQ 4.1 [locally](https://www.rabbitmq.com/docs/download).
 
 ### Steps

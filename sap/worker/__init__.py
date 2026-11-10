@@ -1,26 +1,10 @@
 """
-FastAPI.
+Worker.
 
-This package regroups all common helpers exclusively
-for Celery and background workers in general.
+This package regroups all common helpers for background workers.
+
+The modules of this package define what lambdas and crons process, whatever runs them.
+Pick the runner with its extra:
+- `sap.worker.taskiq` runs them with Taskiq: `pip install sapx[taskiq]`;
+- `sap.worker.celery` runs them with Celery: `pip install sapx[celery]`.
 """
-
-from .amqp import AMQPClient
-from .crons import CronStat, CronTask, FetchStrategy, register_crontask
-from .lambdas import LambdaResponse, LambdaTask, LambdaWorker, register_lambda
-from .packet import SignalPacket
-from .utils import register_tasks_with_celery_beat
-
-__all__ = [
-    "AMQPClient",
-    "SignalPacket",
-    "LambdaResponse",
-    "LambdaTask",
-    "LambdaWorker",
-    "CronTask",
-    "CronStat",
-    "FetchStrategy",
-    "register_lambda",
-    "register_crontask",
-    "register_tasks_with_celery_beat",
-]

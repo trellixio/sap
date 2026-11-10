@@ -11,7 +11,13 @@ LONG_DESCRIPTION = "Library of re-usable utilities for python web apps."
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-VERSION = "0.5.1"
+VERSION = "0.6.0"
+
+# Install the extras an app needs: `beanie` for MongoDB, and the worker runner it uses, `taskiq` or `celery`.
+EXTRAS_BEANIE = ["pymongo~=4.18", "beanie~=2.2.0"]
+EXTRAS_AMQP = ["aio-pika~=10.2"]  # send packets with `sap.worker.packet`
+EXTRAS_CELERY = ["celery~=5.6", *EXTRAS_AMQP]
+EXTRAS_TASKIQ = ["taskiq~=0.13.0", "taskiq-aio-pika~=0.6.1", *EXTRAS_AMQP]
 
 setup(
     name="sapx",
@@ -27,20 +33,22 @@ setup(
     author_email="contact@trellix.io",
     python_requires=">=3.12",
     install_requires=[
-        "aioamqp~=0.15",
         "httpx~=0.28",
         "PyJWT~=2.15",
         "typing-extensions~=4.16",
         "itsdangerous~=2.2",
         "passlib~=1.7",
         "PyYAML~=6.0",
-        "pymongo~=4.18",
         "pydantic~=2.13.5",
-        "beanie~=2.2.0",
         "fastapi~=0.141",
         "redis~=6.4",
-        "celery~=5.6",
     ],
+    extras_require={
+        "amqp": EXTRAS_AMQP,
+        "beanie": EXTRAS_BEANIE,
+        "celery": EXTRAS_CELERY,
+        "taskiq": EXTRAS_TASKIQ,
+    },
     classifiers=[
         "Environment :: Web Environment",
         "Framework :: FastAPI",

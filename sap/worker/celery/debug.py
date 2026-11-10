@@ -12,10 +12,10 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sap.loggers import logger
+from sap.worker.packet import SignalPacket
 
 from .crons import CronStat, CronTask
 from .lambdas import LambdaResponse, LambdaTask
-from .packet import SignalPacket  # , RPCPacket
 
 # from .rpc import RPCTask
 

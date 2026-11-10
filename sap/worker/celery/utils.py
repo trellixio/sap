@@ -14,7 +14,11 @@ from celery.events.state import State
 from celery.utils.serialization import strtobool
 from celery.worker.control import inspect_command
 
+from sap.worker.topics import match_amqp_topics
+
 from .crons import CronTask
+
+__all__ = ["match_amqp_topics", "CeleryBeatTaskParams", "register_tasks_with_celery_beat", "conf"]
 
 # @contextlib.contextmanager
 # def context_timeout(seconds: int) -> typing.Iterator[None]:
@@ -40,26 +44,6 @@ from .crons import CronTask
 #         # Unregister the signal so it won't be triggered
 #         # if the timeout is not reached.
 #         signal.signal(signal.SIGALRM, signal.SIG_IGN)
-
-
-def match_amqp_topics(topic_alpha: str, topic_beta: str) -> bool:
-    """
-    Check that the routing key `topic_beta` matches the binding pattern `topic_alpha`.
-
-    Follow the AMQP topic exchange rules: words are separated by dots,
-    `*` matches exactly one word and `#` matches zero or more words.
-    """
-    return _match_topic_words(topic_alpha.split("."), topic_beta.split("."))
-
-
-def _match_topic_words(pattern: list[str], words: list[str]) -> bool:
-    """Match the words of a binding pattern against the words of a routing key."""
-    if not pattern:
-        return not words
-    head, rest = pattern[0], pattern[1:]
-    if head == "#":
-        return any(_match_topic_words(rest, words[index:]) for index in range(len(words) + 1))
-    return bool(words) and head in ("*", words[0]) and _match_topic_words(rest, words[1:])
 
 
 class CeleryBeatTaskParams(typing.TypedDict, total=True):

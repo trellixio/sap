@@ -1,53 +1,24 @@
 """
 Test Crons.
 
-Test xlib.tasks utilities.
+Test what crons process and report, whatever runs them.
 """
 
-from contextlib import contextmanager
-from typing import Any, Callable, ClassVar, Iterator, Optional
+from typing import Any, Optional
 from unittest import mock
 
-import celery.schedules
 import pytest
-from pyairtable.api.api import Api
-from pyairtable.api.table import Table
 
 from beanie.odm.queries.find import FindMany
 
-from AppMain.settings import AppSettings
 from sap.settings import SapSettings
-from sap.worker.crons import CronStat, CronStorage, CronTask, FetchStrategy, HealthCheckCron, register_crontask
-from sap.worker.crons_airtable import AirtableStorage
+from sap.tests.crons import get_filter_queryset_dummy
+from sap.worker.crons import CronStat, CronTask, FetchStrategy, HealthCheckCron
 from tests.samples import DummyDoc
-
-AIRTABLE_APP = "app9HzOEd8QnsCbJ4"
-
-
-class DummyAirtableStorage(AirtableStorage):
-    PROJECT_NAME: ClassVar[str] = "sap"
-
-    @classmethod
-    def get_env_params(cls) -> tuple[str, str]:
-        """Return env name and env id on airtable"""
-        return "TEST", "rec8deejyHcQzGVda"
-
-    def get_airtable(self, table_name: str = "") -> Table:
-        """Return instance of the table to use give the table_name."""
-        api: Api = Api(AppSettings.AIRTABLE_TOKEN)
-        if table_name == "tasks":
-            return api.table(AIRTABLE_APP, "Tasks")
-        if table_name == "runs":
-            return api.table(AIRTABLE_APP, "Runs")
-        if table_name == "stats":
-            return api.table(AIRTABLE_APP, "Stats")
-        raise NotImplementedError
 
 
 class DummyCron(CronTask):
     """Dummy cron to test that crontask utilities are functioning."""
-
-    storage_class: ClassVar[type[CronStorage]] = DummyAirtableStorage
 
     def get_queryset(self, *, batch_size: Optional[int] = None, **kwargs: Any) -> FindMany[Any]:
         """Return dummy data for testing."""
@@ -79,66 +50,45 @@ class DummyCron(CronTask):
         ]
 
 
-def get_filter_queryset_dummy() -> Callable[[FindMany[Any]], FindMany[Any]]:
-    """Return initial queryset without filtering."""
-
-    def filter_nothing(queryset: FindMany[Any]) -> FindMany[Any]:
-        """Filter queryset."""
-        return queryset
-
-    return filter_nothing
+DUMMY_KWARGS = {"strategy": FetchStrategy.NEW, "batch_size": 20}
 
 
-def get_task(is_error: bool) -> CronTask:
-    """Initialize a cron task for testing"""
-    return register_crontask(
-        DummyCron,
-        schedule=celery.schedules.crontab(hour="12", minute="00", day_of_week="mon"),
-        kwargs={"strategy": FetchStrategy.NEW, "batch_size": 20, "error": is_error},
-    )
+async def test_cron_task_test_process() -> None:
+    """Run the cron on the data sample of the test case."""
+    response = await DummyCron(kwargs=DUMMY_KWARGS).test_process(filter_queryset=get_filter_queryset_dummy())
+    assert response == {"result": list(range(1, 10)), "status": "Success"}
 
 
-@contextmanager
-def _as_prod() -> Iterator[None]:
-    """Run the block with the production environment flag set."""
-    SapSettings.is_env_prod = True
-    try:
-        yield
-    finally:
-        SapSettings.is_env_prod = False
+async def test_cron_task_raises_errors_outside_prod() -> None:
+    """Raise the errors of a run outside production, so tests and developers see them."""
+    with pytest.raises(ValueError):
+        await DummyCron(kwargs=DUMMY_KWARGS | {"error": True}).handle_process()
 
 
-@pytest.mark.parametrize("is_error", [False, True])
-def test_cron_task_run(is_error: bool) -> None:
-    """Run a registered cron as production would."""
-    task = get_task(is_error=is_error)
-    with _as_prod():
-        if AppSettings.AIRTABLE_TOKEN:
-            # Testing that airtable sync is working as expected
-            task.run()
+async def test_cron_task_reports_errors_in_prod() -> None:
+    """Report the error of a run in its response in production, so the worker carries on."""
+    with mock.patch.object(SapSettings, "is_env_prod", True):
+        response = await DummyCron(kwargs=DUMMY_KWARGS | {"error": True}).handle_process()
+    assert response == {"error": {"class": "ValueError", "message": "Invalid Data: dummy error"}, "status": "Error"}
 
 
-@pytest.mark.parametrize("is_error", [False, True])
-@pytest.mark.asyncio
-async def test_cron_task_test_process(is_error: bool) -> None:
-    """Create dummy cron task to ensure that CronTask class is functioning."""
-    task = get_task(is_error=is_error)
+async def test_cron_task_logs_each_run() -> None:
+    """Log the status and the stats of every run."""
+    task = DummyCron(kwargs=DUMMY_KWARGS)
+    with mock.patch.object(task, "logger") as logger:
+        await task.handle_process()
 
-    if is_error:
-        # Testing that error are raised on dev env on failure
-        with pytest.raises(ValueError):
-            await task.test_process(filter_queryset=get_filter_queryset_dummy())
-
-    else:
-        await task.test_process(filter_queryset=get_filter_queryset_dummy())
+    message, name, status, _, stats = logger.info.call_args.args
+    assert message.startswith("Cron finished:")
+    assert (name, status) == ("tests.worker.test_crons.DummyCron", "Success")
+    assert stats == {"data_new": 10, "data_old": 11}
 
 
-@pytest.mark.asyncio
 async def test_health_check_cron() -> None:
     """Head the heartbeat URL and report an empty queryset."""
     task = HealthCheckCron()
     assert not task.get_queryset()
-    assert not await task.get_stats()
+    assert not await task.get_stats()  # crons report no stats unless they define some
 
     entered = mock.AsyncMock()
     entered.head.return_value = mock.Mock(status_code=200)

@@ -1,181 +1,148 @@
+"""
+Test Packets.
+
+Test that signal packets reach the queues of the workers that subscribe to them, whatever runs the workers.
+"""
+
 import asyncio
 import json
-import time
 import typing
 from unittest import mock
 
-# TODO: Replace aioamqp (deprecated) with aio-pika
-import aioamqp.channel
-import aioamqp.envelope
-import aioamqp.exceptions
-import aioamqp.properties
+import aio_pika
+import aio_pika.abc
+import aio_pika.exceptions
 import pytest
-import pytest_asyncio
 
-from AppMain.settings import AppSettings
 from sap.settings import SapSettings
-from sap.worker import AMQPClient, SignalPacket
+from sap.worker.packet import EventPublisher, SignalPacket
+from tests.worker.conftest import AMQP_URL
 
-AMQPClient.db_params = AppSettings.RABBITMQ
-
-
-@pytest.mark.asyncio
-async def test_signal_packet_queue_declaration() -> None:
-    """Test that queues are declared successfully"""
-    packet = SignalPacket("sap.#", providing_args=["identifier"])
-    task_name = "tests.LambdaWorker"
-
-    channel = await packet.get_default_channel()
-
-    queue_primary_name = packet.queue_get_name(task_name=task_name)
-    queue_fallback_name = packet.queue_get_name(task_name=task_name, is_fallback=True)
-
-    async def check_queue_exits(channel_: aioamqp.channel.Channel, queue_name: str, result: bool) -> None:
-        try:
-            await channel_.queue_declare(queue_name=queue_name, passive=True)
-        except aioamqp.exceptions.ChannelClosed:
-            assert not result, "Checking channel existence return `False`, expecting `True`"
-            await channel_.open()
-        else:
-            assert result, "Checking channel existence return `True`, expecting `False`"
-
-    # A. Ensure that all queues have been deleted
-    await channel.queue_delete(queue_name=queue_primary_name)
-    await check_queue_exits(channel, queue_primary_name, result=False)
-    await channel.queue_delete(queue_name=queue_fallback_name)
-    await check_queue_exits(channel, queue_fallback_name, result=False)
-
-    # reset connection
-    # await channel.close()
-    packet.connections.pop("default")
-
-    # B. Run queue declaration
-    await packet.queue_declare(task_name=task_name)
-
-    # Ensure that the queues have been created and binding successfully
-    await packet.connection_close()
-    channel = await packet.get_default_channel()
-    await check_queue_exits(channel, queue_primary_name, result=True)
-    await check_queue_exits(channel, queue_fallback_name, result=True)
-
-    # Other: Test that closing connection works when channel is already closed
-    await channel.close()
-    await packet.connection_close()
+CONSUMER_NAME = "sap_tests.PacketConsumer"
 
 
-@pytest.mark.asyncio
-async def test_signal_packet_send() -> None:
-    """Testing that sending messages is working."""
-    SapSettings.is_env_dev = False
-    task_name = "tests.LambdaWorker"
-    identifier = "card_12345"
-    timestamp = int(time.time())
-    result = {}
-
-    # Create received queue
-    packet_receiver = SignalPacket("sap.#", providing_args=["identifier"])
-    await packet_receiver.queue_declare(task_name=task_name)
-
-    # Create queue consumer client
-    async def callback_receiver(
-        channel: aioamqp.channel.Channel,
-        payload: bytes,
-        envelop: aioamqp.envelope.Envelope,
-        properties: aioamqp.properties.Properties,
-    ) -> None:
-        # print(f'Message received {payload=} {properties=}')
-        await channel.basic_client_ack(envelop.delivery_tag)
-        result["receiver"] = json.loads(payload.decode("utf-8"))
-        result["properties"] = properties
-
-    channel = await packet_receiver.get_default_channel()
-    await channel.basic_consume(callback_receiver, packet_receiver.queue_get_name(task_name=task_name), no_wait=True)
-
-    # Send messages
-    packet_sender = SignalPacket(f"sap.app.{identifier}.user.created", providing_args=["identifier"])
-    await packet_sender.send(identifier=identifier, timestamp=timestamp)
-
-    await asyncio.sleep(1)
-
-    # Check that messages has been received
-    assert "receiver" in result
-    assert result["receiver"]["identifier"] == identifier
-    assert result["receiver"]["kwargs"]["timestamp"] == timestamp
-
-    # Test that packet are disable by default in dev
-    SapSettings.is_env_dev = True
-    await packet_sender.send(identifier=identifier, timestamp=timestamp)
-    await packet_sender.connection_close()
+def test_signal_packet_matches_received_topics() -> None:
+    """Match received topics against the topic pattern of the packet."""
+    packet = SignalPacket("sap_tests.*.user.created", providing_args=["identifier"])
+    assert packet.namespace == "sap_tests"
+    assert packet.matches("sap_tests.card_1.user.created")
+    assert not packet.matches("sap_tests.card_1.user.deleted")
 
 
-@pytest.fixture(name="packet_sending")
-def fixture_packet_sending() -> typing.Iterator[None]:
-    """Enable packet sending, which is disabled in dev."""
-    SapSettings.is_env_dev = False
-    yield
-    SapSettings.is_env_dev = True
+def test_signal_packet_queue_params() -> None:
+    """Name and configure the queues of a consumer after the topic: a primary queue, and a fallback for dead packets."""
+    packet = SignalPacket("stem.#", providing_args=["identifier"])
+
+    assert packet.queue_get_params("trellis.LambdaWorker") == {
+        "name": "signal:stem.#->trellis.LambdaWorker",
+        "exchange": "packet.signal",
+        "routing_key": "stem.#",
+        "durable": True,
+        "queue_arguments": {
+            "x-dead-letter-exchange": "packet.signal.retry",
+            "x-queue-type": "quorum",
+            "x-delivery-limit": 5,
+        },
+    }
+    assert packet.queue_get_params("trellis.LambdaWorker", is_fallback=True) == {
+        "name": "signal:stem.#->trellis.LambdaWorker@retry",
+        "exchange": "packet.signal.retry",
+        "routing_key": "stem.#",
+        "durable": True,
+        "queue_arguments": {"x-dead-letter-exchange": "packet.signal", "x-message-ttl": 1000 * 60 * 60 * 6},
+    }
 
 
-@pytest_asyncio.fixture(name="packet_connection_closed")
-async def fixture_packet_connection_closed() -> typing.AsyncIterator[None]:
-    """Close the connection opened by the test, even when it fails."""
-    yield
-    await SignalPacket.connection_close()
+@pytest.mark.usefixtures("packet_sending", "publisher")
+async def test_signal_packet_reaches_the_queue_of_its_consumers(amqp_channel: aio_pika.abc.AbstractChannel) -> None:
+    """Deliver a JSON body with the identifier and kwargs to the queue of every consumer of the topic."""
+    packet_consumed = SignalPacket("sap_tests.packet.*.user.created", providing_args=["identifier"])
+    queue = await packet_consumed.queue_declare(amqp_channel, task_name=CONSUMER_NAME)
+    queue_fallback_name = packet_consumed.queue_get_name(CONSUMER_NAME, is_fallback=True)
+    await amqp_channel.declare_queue(queue_fallback_name, passive=True)  # declared along with the primary queue
+
+    await SignalPacket("sap_tests.packet.card_1.user.created", ["identifier"]).send("card_1", timestamp=1)
+
+    message = await queue.get(timeout=5)  # the broker confirmed the publish, the message is already queued
+    await message.ack()
+    await amqp_channel.queue_delete(queue.name)
+    await amqp_channel.queue_delete(queue_fallback_name)
+    assert json.loads(message.body) == {"identifier": "card_1", "kwargs": {"timestamp": 1}}
+    assert message.content_type == "application/json"
+    assert message.routing_key == "sap_tests.packet.card_1.user.created"
+    assert message.message_id  # the dispatcher recognizes the packet by its id when it comes back
 
 
-@pytest.fixture(name="connection_session_aside")
-def fixture_connection_session_aside() -> typing.Iterator[None]:
-    """Keep the pytest loop's connection aside while the test opens connections on its own event loops."""
-    connection_session = SignalPacket.connections.pop("default", None)
-    yield
-    if connection_session is not None:
-        SignalPacket.connections["default"] = connection_session
+async def test_signal_packet_send_is_disabled_in_dev(publisher: EventPublisher) -> None:
+    """Do not publish anything in the dev environment."""
+    with mock.patch.object(SapSettings, "is_env_dev", True), mock.patch.object(publisher, "publish") as publish:
+        await SignalPacket("sap_tests.packet.card_1.user.created", ["identifier"]).send("card_1")
+    publish.assert_not_called()
 
 
-@pytest.mark.usefixtures("packet_sending", "connection_session_aside")
-def test_signal_packet_send_from_successive_event_loops() -> None:
-    """Reconnect when the cached connection was opened by an event loop that has since closed.
-
-    Celery tasks run each call in its own `asyncio.run`, so a task that sends a packet hits this on its second run.
-    """
-    packet = SignalPacket("sap_tests.app.card_12345.loop.created", providing_args=["identifier"])
-
-    async def send_then_close() -> None:
-        await packet.send("card_12345")
-        await packet.connection_close()
-
-    asyncio.run(asyncio.wait_for(packet.send("card_12345"), timeout=10))
-    asyncio.run(asyncio.wait_for(send_then_close(), timeout=10))  # used to wait forever on the stale connection
+@pytest.mark.usefixtures("packet_sending", "publisher")
+async def test_signal_packet_send_refuses_topic_patterns() -> None:
+    """Refuse to send to a topic pattern, which only makes sense to subscribe."""
+    with pytest.raises(ValueError):
+        await SignalPacket("sap_tests.packet.*.user.created", ["identifier"]).send("card_1")
 
 
-@pytest.mark.asyncio
-@pytest.mark.usefixtures("packet_sending", "packet_connection_closed")
-async def test_signal_packet_send_after_connection_lost() -> None:
-    """Open a new connection when the broker dropped the cached one."""
-    packet = SignalPacket("sap_tests.app.card_12345.lost.created", providing_args=["identifier"])
-    connection_lost = await packet.connection_retrieve()
-    connection_lost.transport.abort()  # drop the socket like a broker restart would
-    await asyncio.sleep(0.1)
+async def test_event_publisher_retries_once_on_a_new_connection(publisher: EventPublisher) -> None:
+    """Reconnect and publish again once when the broker fails; a second failure is raised."""
+    exchange_before = await publisher.connect()
+    error = aio_pika.exceptions.AMQPConnectionError("connection lost")
 
-    await asyncio.wait_for(packet.send("card_12345"), timeout=10)
+    with mock.patch.object(EventPublisher, "_publish", side_effect=[error, None]) as publish:
+        await publisher.publish("sap_tests.packet.card_1.retry.created", b"{}")
+    assert publish.await_count == 2
+    assert await publisher.connect() is not exchange_before
 
-    assert packet.connections["default"] is not connection_lost
+    with mock.patch.object(EventPublisher, "_publish", side_effect=[error, error]):
+        with pytest.raises(aio_pika.exceptions.AMQPConnectionError):
+            await publisher.publish("sap_tests.packet.card_1.retry.created", b"{}")
 
 
-@pytest.mark.asyncio
-@pytest.mark.usefixtures("packet_sending", "packet_connection_closed")
-async def test_signal_packet_send_reconnects_once_when_publish_fails() -> None:
-    """Retry a publish once on a new connection; a second failure is raised."""
-    packet = SignalPacket("sap_tests.app.card_12345.retry.created", providing_args=["identifier"])
-    closed = aioamqp.exceptions.AmqpClosedConnection()
-    await packet.exchange_declare()  # the declarations below are mocked, make sure the exchange exists
-    connection_first = await packet.connection_retrieve()
+async def test_event_publisher_reconnects_once_when_publishes_fail_together(publisher: EventPublisher) -> None:
+    """Keep the new connection of a publish that failed when another publish fails later on the old connection."""
+    exchange_failing = await publisher.connect()
+    both_published = asyncio.Barrier(2)
+    reconnected = asyncio.Event()
+    exchanges_retried: list[aio_pika.abc.AbstractExchange] = []
 
-    with mock.patch.object(SignalPacket, "exchange_declare", side_effect=[closed, None]) as exchange_declare:
-        await packet.send("card_12345")
-    assert exchange_declare.await_count == 2
-    assert packet.connections["default"] is not connection_first
+    async def publish_once(exchange: aio_pika.abc.AbstractExchange, *args: typing.Any) -> None:
+        if exchange is exchange_failing:
+            if await both_published.wait():  # the second publish fails once the first one has reconnected
+                await reconnected.wait()
+            raise aio_pika.exceptions.AMQPConnectionError("connection lost")
+        exchanges_retried.append(exchange)
+        reconnected.set()
 
-    with mock.patch.object(SignalPacket, "exchange_declare", side_effect=[closed, closed]):
-        with pytest.raises(aioamqp.exceptions.AmqpClosedConnection):
-            await packet.send("card_12345")
+    with mock.patch.object(EventPublisher, "_publish", side_effect=publish_once):
+        await asyncio.gather(
+            publisher.publish("sap_tests.packet.card_1.retry.created", b"{}"),
+            publisher.publish("sap_tests.packet.card_2.retry.created", b"{}"),
+        )
+    exchange_new = await publisher.connect()
+    assert exchanges_retried == [exchange_new, exchange_new]
+
+
+def test_event_publisher_reconnects_on_each_event_loop() -> None:
+    """Open a new connection when the one cached by the publisher belongs to an event loop that has closed."""
+    publisher = EventPublisher(AMQP_URL)
+
+    async def publish(is_last: bool) -> aio_pika.abc.AbstractExchange:
+        await publisher.publish("sap_tests.packet.card_1.loop.created", b"{}")
+        exchange = await publisher.connect()
+        if is_last:
+            await publisher.close()
+        return exchange
+
+    exchange_first = asyncio.run(asyncio.wait_for(publish(is_last=False), timeout=10))
+    exchange_second = asyncio.run(asyncio.wait_for(publish(is_last=True), timeout=10))
+    assert exchange_second is not exchange_first
+
+
+async def test_event_publisher_requires_a_url() -> None:
+    """Fail clearly when the publisher was never pointed to a broker."""
+    with pytest.raises(AssertionError, match="url"):
+        await EventPublisher().publish("sap_tests.packet.card_1.user.created", b"{}")

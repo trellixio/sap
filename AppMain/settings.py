@@ -69,7 +69,6 @@ class _Settings(pydantic_settings.BaseSettings):
 
     # Tokens
     CRYPTO_SECRET: str  # a key used for encryption
-    AIRTABLE_TOKEN: str = ""
     BEANS_OAUTH_URL: str = (
         "https://connect.trybeans.com/auth/authorize/?client_id={client_id}&redirect_uri={redirect_uri}"
     )

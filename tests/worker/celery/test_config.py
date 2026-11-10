@@ -7,7 +7,7 @@ Test celery config presets for lambda and cron workers.
 import pytest
 from kombu.pidbox import Mailbox
 
-from sap.worker.config import CeleryConfig, CronCeleryConfig, LambdaCeleryConfig
+from sap.worker.celery.config import CeleryConfig, CronCeleryConfig, LambdaCeleryConfig
 
 
 def test_reply_exchange_format() -> None:

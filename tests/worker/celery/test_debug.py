@@ -8,9 +8,9 @@ from unittest import mock
 
 import pytest
 
-from sap.worker.crons import CronStat
-from sap.worker.debug import DebugCronTask, DebugLambdaTask1, DebugLambdaTask2
-from sap.worker.lambdas import LambdaTask
+from sap.worker.celery.crons import CronStat
+from sap.worker.celery.debug import DebugCronTask, DebugLambdaTask1, DebugLambdaTask2
+from sap.worker.celery.lambdas import LambdaTask
 
 
 @pytest.mark.asyncio
@@ -18,7 +18,7 @@ from sap.worker.lambdas import LambdaTask
 async def test_debug_lambda_process(task_cls: type[LambdaTask]) -> None:
     """Run a debug lambda without waiting on the sleep."""
     task = task_cls()
-    with mock.patch("sap.worker.debug.asyncio.sleep", new_callable=mock.AsyncMock) as sleep:
+    with mock.patch("sap.worker.celery.debug.asyncio.sleep", new_callable=mock.AsyncMock) as sleep:
         result = await task.handle_process("order-1", order_data={"id": 1})
 
     sleep.assert_awaited_once_with(30)
