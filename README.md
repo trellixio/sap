@@ -6,7 +6,8 @@ Published as `sapx`; import it as `sap`.
 
 ## 📦 Using in an app
 Install the extras the app needs:
-- `beanie`: MongoDB with Beanie, for `sap.beanie` and `sap.fastapi`;
+- `sqlalchemy`: SQL databases with SQLAlchemy, for the models of `sap.fastapi` serializers and forms;
+- `beanie`: MongoDB with Beanie, for `sap.beanie` and its FastAPI middleware in `sap.beanie.fastapi`;
 - `amqp`: RabbitMQ, to send packets with `sap.worker.packet`;
 - `taskiq`: background workers on Taskiq, for `sap.worker.taskiq`;
 - `celery`: background workers on Celery, for `sap.worker.celery`.

@@ -1,10 +1,10 @@
-"""Tests for sap/tests/crons.py."""
+"""Tests for sap/beanie/tests.py."""
 
 import pytest
 
 from beanie.odm.queries.find import FindMany
 
-from sap.tests.crons import get_filter_queryset_dummy, get_filter_queryset_for_merchant
+from sap.beanie.tests import get_filter_queryset_dummy, get_filter_queryset_for_merchant
 from tests.samples import CategoryDoc, MerchantDoc, ProductDoc
 
 

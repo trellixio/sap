@@ -11,8 +11,8 @@ import pytest
 
 from beanie.odm.queries.find import FindMany
 
+from sap.beanie.tests import get_filter_queryset_dummy
 from sap.settings import SapSettings
-from sap.tests.crons import get_filter_queryset_dummy
 from sap.worker.crons import CronStat, CronTask, FetchStrategy, HealthCheckCron
 from tests.samples import DummyDoc
 

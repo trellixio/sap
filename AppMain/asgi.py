@@ -19,7 +19,7 @@ from starlette.responses import JSONResponse
 from AppMain.settings import AppSettings
 from sap.beanie import Document
 from sap.beanie.client import BeanieClient
-from sap.fastapi.middleware import InitBeanieMiddleware
+from sap.beanie.fastapi import InitBeanieMiddleware
 from sap.loggers import logger
 
 

@@ -1,7 +1,7 @@
 """
-Test Crons.
+Tests.
 
-Helpers to make it easier to create test cases for crons.
+Helpers to make it easier to create test cases for crons that process Beanie documents.
 """
 
 import typing

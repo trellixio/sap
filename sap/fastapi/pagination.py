@@ -10,14 +10,6 @@ from . import utils
 PageDataT = TypeVar("PageDataT")
 
 
-class BeanieQueryParams(TypedDict):
-    """Attribute of beanie query params."""
-
-    limit: int
-    skip: int
-    sort: str
-
-
 class CursorInfo:
     """
     Contains information on how the list should paginated.
@@ -44,17 +36,6 @@ class CursorInfo:
             self.limit, self.offset = int(limit), int(offset)
 
         self.limit = min(self.limit, self.limit_max)
-
-    def get_beanie_query_params(self) -> BeanieQueryParams:
-        """Return params for a beanie page query.
-
-        Count a query without these limit and skip values. Beanie 2 includes both in count().
-        """
-        return {
-            "limit": self.limit,
-            "skip": self.offset,
-            "sort": self.sort,
-        }
 
     def set_count(self, value: int) -> None:
         """Set the total count of the query."""

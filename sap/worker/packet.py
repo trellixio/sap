@@ -14,7 +14,11 @@ import re
 import uuid
 from typing import Any, ClassVar, Optional
 
-import aio_pika
+try:
+    import aio_pika
+except ImportError as exc:
+    raise ImportError("sap.worker.packet needs the amqp extra: pip install 'sapx[amqp]'") from exc
+
 import aio_pika.abc
 import aio_pika.exceptions
 from pamqp.constants import DOMAIN_REGEX

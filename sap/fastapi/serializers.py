@@ -35,11 +35,18 @@ from fastapi import Request
 from pydantic import AnyUrl, BaseModel
 from pydantic.fields import FieldInfo, PrivateAttr
 
-from sap.beanie.document import Document
 from sap.sqlachemy import AlchemyOrPydanticModelT
 from sap.typing import UnionType
 
 from .pagination import CursorInfo, PaginatedData
+
+try:
+    from sap.beanie.document import Document
+except ImportError:
+
+    class Document:  # type: ignore
+        """Stand in for the document object."""
+
 
 try:
     from sqlalchemy.orm import DeclarativeBase

@@ -13,10 +13,12 @@ from requests.models import Response
 from fastapi import status
 
 from AppMain.asgi import app
-from sap.beanie.document import DocT
 from sap.fastapi.pagination import PaginatedResponse
 from sap.fastapi.user import UserMixin
 from sap.fastapi.utils import ErrorDict
+
+if typing.TYPE_CHECKING:
+    from sap.beanie.document import DocT
 
 
 class Headers(typing.TypedDict, total=False):

@@ -8,17 +8,13 @@ Learn more: https://fastapi.tiangolo.com/tutorial/middleware/
 from __future__ import annotations
 
 import traceback
-from typing import Awaitable, Callable, ClassVar, List, Type
+from typing import Awaitable, Callable
 
-import beanie
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
-from starlette.types import ASGIApp, Receive, Scope, Send
 
-from sap.beanie.client import BeanieClient
 from sap.loggers import logger
-from sap.settings import DatabaseParams
 
 
 class LogServerErrorMiddleware(BaseHTTPMiddleware):
@@ -42,35 +38,3 @@ class LogServerErrorMiddleware(BaseHTTPMiddleware):
             logger.exception(exc)
             trace = traceback.format_exception(type(exc), exc, exc.__traceback__)
             return JSONResponse(content={"traceback": trace}, status_code=500)
-
-
-class InitBeanieMiddleware:
-    """Middleware to initialize a connection to Mongo database."""
-
-    app: ASGIApp
-    mongo_params: DatabaseParams
-    document_models: List[Type[beanie.Document]] | List[Type[beanie.View]] | List[str]
-    force: bool = False
-    beanie_client_class: ClassVar[Type[BeanieClient]] = BeanieClient
-
-    def __init__(
-        self,
-        app: ASGIApp,
-        mongo_params: DatabaseParams,
-        document_models: List[Type[beanie.Document]] | List[Type[beanie.View]] | List[str],
-        force: bool = False,
-    ) -> None:
-        """Initialize Middleware."""
-        self.app = app
-        self.mongo_params = mongo_params
-        self.document_models = document_models
-        self.force = force
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """Run Middleware."""
-        await self.beanie_client_class.init(
-            mongo_params=self.mongo_params,
-            document_models=self.document_models,
-            force=self.force,
-        )
-        await self.app(scope, receive, send)

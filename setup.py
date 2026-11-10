@@ -13,7 +13,9 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 VERSION = "0.6.0"
 
-# Install the extras an app needs: `beanie` for MongoDB, and the worker runner it uses, `taskiq` or `celery`.
+# Install the extras an app needs: its database, `sqlalchemy` or `beanie` for MongoDB,
+# and the worker runner it uses, `taskiq` or `celery`.
+EXTRAS_SQLALCHEMY = ["SQLAlchemy~=2.1"]
 EXTRAS_BEANIE = ["pymongo~=4.18", "beanie~=2.2.0"]
 EXTRAS_AMQP = ["aio-pika~=10.2"]  # send packets with `sap.worker.packet`
 EXTRAS_CELERY = ["celery~=5.6", *EXTRAS_AMQP]
@@ -47,6 +49,7 @@ setup(
         "amqp": EXTRAS_AMQP,
         "beanie": EXTRAS_BEANIE,
         "celery": EXTRAS_CELERY,
+        "sqlalchemy": EXTRAS_SQLALCHEMY,
         "taskiq": EXTRAS_TASKIQ,
     },
     classifiers=[

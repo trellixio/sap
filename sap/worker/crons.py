@@ -120,7 +120,7 @@ class CronTask:
 
         filter_queryset: This allows you to run an extra filtering on the data being processing.
         Useful if you want to limit the data processing to a specific sample.
-        It receives the queryset of `get_queryset` and returns the filtered one, see `sap.tests.crons`.
+        It receives the queryset of `get_queryset` and returns the filtered one, see `sap.beanie.tests`.
         """
         original_get_queryset = self.get_queryset
 

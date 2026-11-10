@@ -6,6 +6,11 @@ This package regroups all common helpers to run lambdas and crons with Celery, o
 It needs the `celery` extra: `pip install sapx[celery]`.
 """
 
+try:
+    import celery
+except ImportError as exc:
+    raise ImportError("sap.worker.celery needs the celery extra: pip install 'sapx[celery]'") from exc
+
 from sap.worker.packet import EventPublisher, SignalPacket
 
 from .crons import CronStat, CronTask, FetchStrategy, register_crontask

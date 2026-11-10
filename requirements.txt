@@ -9,8 +9,7 @@
 pip==26.2.1
 
 # Install all dependencies in setup.py
--e .[beanie,celery,taskiq]
+-e .[beanie,celery,sqlalchemy,taskiq]
 
 # Optional dependencies
-SQLAlchemy~=2.1
 setuptools~=84.0

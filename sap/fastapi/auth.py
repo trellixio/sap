@@ -22,8 +22,15 @@ from pydantic import BaseModel
 from starlette.status import HTTP_307_TEMPORARY_REDIRECT as HTTP_307
 from starlette.status import HTTP_401_UNAUTHORIZED as HTTP_401
 
-from sap.beanie.document import Document
 from sap.exceptions import Object404Error
+
+try:
+    from sap.beanie.document import Document
+except ImportError:
+
+    class Document:  # type: ignore
+        """Stand in for the document object."""
+
 
 # UserT = TypeVar("UserT", bound=Document)
 # UserViewT: typing_extensions.TypeAlias = Union[Document, BaseModel, object]

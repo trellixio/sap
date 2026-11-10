@@ -11,6 +11,11 @@ This package regroups all common helpers to run lambdas and crons with Taskiq, o
 It needs the `taskiq` extra: `pip install sapx[taskiq]`.
 """
 
+try:
+    import taskiq_aio_pika  # imports taskiq as well
+except ImportError as exc:
+    raise ImportError("sap.worker.taskiq needs the taskiq extra: pip install 'sapx[taskiq]'") from exc
+
 from sap.worker.crons import CronResponse, CronStat, CronTask, FetchStrategy, HealthCheckCron
 from sap.worker.lambdas import LambdaHandler, LambdaResponse
 from sap.worker.packet import EventPublisher, SignalPacket
