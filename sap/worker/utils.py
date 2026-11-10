@@ -44,15 +44,22 @@ from .crons import CronTask
 
 def match_amqp_topics(topic_alpha: str, topic_beta: str) -> bool:
     """
-    Allow comparison on topics pattern.
+    Check that the routing key `topic_beta` matches the binding pattern `topic_alpha`.
 
-    This method makes it easy to know if topic_a is contained in topic_b.
+    Follow the AMQP topic exchange rules: words are separated by dots,
+    `*` matches exactly one word and `#` matches zero or more words.
     """
-    parts_alpha = topic_alpha.split(".")
-    parts_beta = topic_beta.split(".")
-    if any(a != b and a != "*" and b != "*" for (a, b) in zip(parts_alpha, parts_beta)):
-        return False
-    return True
+    return _match_topic_words(topic_alpha.split("."), topic_beta.split("."))
+
+
+def _match_topic_words(pattern: list[str], words: list[str]) -> bool:
+    """Match the words of a binding pattern against the words of a routing key."""
+    if not pattern:
+        return not words
+    head, rest = pattern[0], pattern[1:]
+    if head == "#":
+        return any(_match_topic_words(rest, words[index:]) for index in range(len(words) + 1))
+    return bool(words) and head in ("*", words[0]) and _match_topic_words(rest, words[1:])
 
 
 class CeleryBeatTaskParams(typing.TypedDict, total=True):
