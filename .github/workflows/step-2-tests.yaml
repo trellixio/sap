@@ -21,13 +21,13 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       matrix:
         python-version: ['3.12']
         redis-version: ['8']
-        mongodb-version: ['8.0']
+        mongodb-version: ['9.0']
         rabbitmq-version: ['4.1']
     outputs:
       test_results: ${{ join(steps.run_tests.outputs.*, '\n') }}
